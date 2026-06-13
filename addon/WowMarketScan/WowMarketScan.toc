@@ -1,0 +1,10 @@
+## Interface: 20505
+## Title: WoW Market Scan
+## Notes: Captures Auctionator full scans for external market analysis.
+## Author: eolseng
+## Version: 0.1.0-dev
+## Dependencies: Auctionator
+## SavedVariables: WOW_MARKET_SCAN_DB
+
+Core.lua
+Capture.lua

@@ -6,7 +6,6 @@ local SCAN_COMPLETE_EVENT = "get_all_scan_complete"
 local DEFAULT_CONFIG = {
   maxExportRows = 100,
   maxPendingScans = 3,
-  captureOwner = false,
 }
 
 local function ApplyDefaults(target, defaults)
@@ -28,9 +27,6 @@ local function NormalizeConfig(config)
   end
   config.maxPendingScans = math.floor(config.maxPendingScans)
 
-  if type(config.captureOwner) ~= "boolean" then
-    config.captureOwner = DEFAULT_CONFIG.captureOwner
-  end
 end
 
 local function Print(message)
@@ -50,6 +46,7 @@ local function InitializeDatabase()
 
   ApplyDefaults(WOW_MARKET_SCAN_DB.config, DEFAULT_CONFIG)
   NormalizeConfig(WOW_MARKET_SCAN_DB.config)
+  WOW_MARKET_SCAN_DB.config.captureOwner = nil
 end
 
 local Listener = {}

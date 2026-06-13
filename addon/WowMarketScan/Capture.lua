@@ -10,7 +10,6 @@ local ROW_FIELDS = {
   "minIncrement",
   "buyout",
   "bidAmount",
-  "owner",
   "saleStatus",
   "hasAllInfo",
 }
@@ -24,13 +23,19 @@ local AUCTION_INFO = {
   minIncrement = 9,
   buyout = 10,
   bidAmount = 11,
-  owner = 14,
   saleStatus = 16,
   itemId = 17,
   hasAllInfo = 18,
 }
 
 local BATCH_SIZE = 250
+local REGION_CODES = {
+  [1] = "us",
+  [2] = "kr",
+  [3] = "eu",
+  [4] = "tw",
+  [5] = "cn",
+}
 
 local Capture = {
   active = nil,
@@ -62,13 +67,9 @@ local function ExtractItemString(itemLink)
   return string.match(itemLink, "|H(item:[^|]+)|h") or ""
 end
 
-local function CompactRow(sourceRow, entry, captureOwner)
+local function CompactRow(sourceRow, entry)
   entry = entry or {}
   local info = entry.auctionInfo or {}
-  local owner = ""
-  if captureOwner then
-    owner = StringOrEmpty(info[AUCTION_INFO.owner])
-  end
 
   return {
     sourceRow,
@@ -82,9 +83,27 @@ local function CompactRow(sourceRow, entry, captureOwner)
     NumberOrZero(info[AUCTION_INFO.minIncrement]),
     NumberOrZero(info[AUCTION_INFO.buyout]),
     NumberOrZero(info[AUCTION_INFO.bidAmount]),
-    owner,
     NumberOrZero(info[AUCTION_INFO.saleStatus]),
     BooleanNumber(info[AUCTION_INFO.hasAllInfo]),
+  }
+end
+
+local function GetScannerIdentity()
+  local characterName
+  local characterRealm
+
+  if UnitFullName then
+    characterName, characterRealm = UnitFullName("player")
+  end
+  characterName = characterName or UnitName("player") or ""
+  characterRealm = characterRealm or GetRealmName() or ""
+
+  local regionID = GetCurrentRegion and GetCurrentRegion() or 0
+  return {
+    name = characterName,
+    realm = characterRealm,
+    guid = UnitGUID("player") or "",
+    region = REGION_CODES[regionID] or "unknown",
   }
 end
 
@@ -124,7 +143,7 @@ local function ProcessBatch()
   for row = active.nextRow, stopAt do
     table.insert(
       active.scan.rows,
-      CompactRow(row, active.rawFullScan[row], active.captureOwner)
+      CompactRow(row, active.rawFullScan[row])
     )
   end
 
@@ -152,19 +171,23 @@ function Capture:Begin(rawFullScan)
   local sourceRowCount = #rawFullScan
   local exportLimit = math.min(sourceRowCount, config.maxExportRows)
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+  local scanner = GetScannerIdentity()
 
   self.active = {
     rawFullScan = rawFullScan,
-    captureOwner = config.captureOwner,
     exportLimit = exportLimit,
     nextRow = 1,
     scan = {
-      formatVersion = 1,
+      formatVersion = 2,
       status = "capturing",
       capturedAt = GetServerTime and GetServerTime() or time(),
       realm = GetRealmName() or "",
       faction = UnitFactionGroup("player") or "",
       auctionHouse = "unknown",
+      scannerCharacterName = scanner.name,
+      scannerCharacterRealm = scanner.realm,
+      scannerCharacterGUID = scanner.guid,
+      scannerRegion = scanner.region,
       source = "Auctionator",
       sourceEvent = WowMarketScan.ScanCompleteEvent,
       sourceVersion = getMetadata("Auctionator", "Version") or "unknown",

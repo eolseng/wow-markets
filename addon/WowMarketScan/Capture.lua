@@ -1,17 +1,21 @@
 local ROW_FIELDS = {
   "sourceRow",
-  "itemId",
-  "itemString",
-  "name",
+  "itemRef",
   "stackCount",
-  "quality",
-  "requiredLevel",
   "minBid",
   "minIncrement",
   "buyout",
   "bidAmount",
   "saleStatus",
   "hasAllInfo",
+}
+
+local ITEM_FIELDS = {
+  "itemId",
+  "itemString",
+  "name",
+  "quality",
+  "requiredLevel",
 }
 
 local AUCTION_INFO = {
@@ -67,18 +71,40 @@ local function ExtractItemString(itemLink)
   return string.match(itemLink, "|H(item:[^|]+)|h") or ""
 end
 
-local function CompactRow(sourceRow, entry)
+local function GetItemReference(active, info, itemLink)
+  local itemID = NumberOrZero(info[AUCTION_INFO.itemId])
+  local itemString = ExtractItemString(itemLink)
+  local name = StringOrEmpty(info[AUCTION_INFO.name])
+  local key = itemString
+  if key == "" then
+    key = tostring(itemID) .. "\031" .. name
+  end
+
+  local existing = active.itemLookup[key]
+  if existing then
+    return existing
+  end
+
+  table.insert(active.scan.items, {
+    itemID,
+    itemString,
+    name,
+    NumberOrZero(info[AUCTION_INFO.quality]),
+    NumberOrZero(info[AUCTION_INFO.requiredLevel]),
+  })
+  local reference = #active.scan.items
+  active.itemLookup[key] = reference
+  return reference
+end
+
+local function CompactRow(active, sourceRow, entry)
   entry = entry or {}
   local info = entry.auctionInfo or {}
 
   return {
     sourceRow,
-    NumberOrZero(info[AUCTION_INFO.itemId]),
-    ExtractItemString(entry.itemLink),
-    StringOrEmpty(info[AUCTION_INFO.name]),
+    GetItemReference(active, info, entry.itemLink),
     NumberOrZero(info[AUCTION_INFO.stackCount]),
-    NumberOrZero(info[AUCTION_INFO.quality]),
-    NumberOrZero(info[AUCTION_INFO.requiredLevel]),
     NumberOrZero(info[AUCTION_INFO.minBid]),
     NumberOrZero(info[AUCTION_INFO.minIncrement]),
     NumberOrZero(info[AUCTION_INFO.buyout]),
@@ -122,6 +148,13 @@ local function Finish()
 
   scan.status = "ready"
   scan.exportedRowCount = #scan.rows
+  scan.itemCount = #scan.items
+  scan.exportFinishedAt = GetServerTime and GetServerTime() or time()
+  if debugprofilestop then
+    scan.exportDurationMs = math.floor(debugprofilestop() - active.startedAtMs + 0.5)
+  else
+    scan.exportDurationMs = 0
+  end
 
   TrimQueue()
   table.insert(WOW_MARKET_SCAN_DB.pendingScans, scan)
@@ -143,7 +176,7 @@ local function ProcessBatch()
   for row = active.nextRow, stopAt do
     table.insert(
       active.scan.rows,
-      CompactRow(row, active.rawFullScan[row])
+      CompactRow(active, row, active.rawFullScan[row])
     )
   end
 
@@ -169,18 +202,26 @@ function Capture:Begin(rawFullScan)
 
   local config = WOW_MARKET_SCAN_DB.config
   local sourceRowCount = #rawFullScan
-  local exportLimit = math.min(sourceRowCount, config.maxExportRows)
+  local exportLimit = sourceRowCount
+  if config.maxExportRows > 0 then
+    exportLimit = math.min(sourceRowCount, config.maxExportRows)
+  end
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   local scanner = GetScannerIdentity()
+  local startedAt = GetServerTime and GetServerTime() or time()
 
   self.active = {
     rawFullScan = rawFullScan,
     exportLimit = exportLimit,
     nextRow = 1,
+    startedAtMs = debugprofilestop and debugprofilestop() or 0,
+    itemLookup = {},
     scan = {
-      formatVersion = 2,
+      formatVersion = 3,
       status = "capturing",
-      capturedAt = GetServerTime and GetServerTime() or time(),
+      capturedAt = startedAt,
+      exportStartedAt = startedAt,
+      exportBatchSize = BATCH_SIZE,
       realm = GetRealmName() or "",
       faction = UnitFactionGroup("player") or "",
       auctionHouse = "unknown",
@@ -194,7 +235,10 @@ function Capture:Begin(rawFullScan)
       addonVersion = WowMarketScan.GetAddonVersion(),
       sourceRowCount = sourceRowCount,
       exportedRowCount = 0,
+      itemCount = 0,
       truncated = exportLimit < sourceRowCount,
+      itemFields = ITEM_FIELDS,
+      items = {},
       rowFields = ROW_FIELDS,
       rows = {},
     },
@@ -210,6 +254,16 @@ end
 
 function Capture:IsActive()
   return self.active ~= nil
+end
+
+function Capture:GetStatus()
+  if not self.active then
+    return "idle"
+  end
+
+  return "capturing " ..
+    math.min(self.active.nextRow - 1, self.active.exportLimit) ..
+    "/" .. self.active.exportLimit
 end
 
 WowMarketScan.Capture = Capture

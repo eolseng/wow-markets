@@ -26,7 +26,6 @@ local function NormalizeConfig(config)
     config.maxPendingScans = DEFAULT_CONFIG.maxPendingScans
   end
   config.maxPendingScans = math.floor(config.maxPendingScans)
-
 end
 
 local function Print(message)
@@ -80,6 +79,7 @@ end)
 SLASH_WOWMARKETSCAN1 = "/wms"
 SlashCmdList.WOWMARKETSCAN = function(command)
   local normalized = string.lower(command or "")
+  local rowValue = string.match(normalized, "^rows%s+(.+)$")
 
   if normalized == "clear" then
     WOW_MARKET_SCAN_DB.pendingScans = {}
@@ -87,14 +87,36 @@ SlashCmdList.WOWMARKETSCAN = function(command)
     return
   end
 
-  if normalized == "status" or normalized == "" then
-    local count = #WOW_MARKET_SCAN_DB.pendingScans
-    local activity = WowMarketScan.Capture:IsActive() and "capturing" or "idle"
-    Print(activity .. "; " .. count .. " pending scan(s).")
+  if rowValue then
+    if rowValue == "all" then
+      WOW_MARKET_SCAN_DB.config.maxExportRows = 0
+      Print("row limit set to all; full exports may create large SavedVariables files.")
+      return
+    end
+
+    local numericValue = tonumber(rowValue)
+    if numericValue and numericValue >= 1 then
+      WOW_MARKET_SCAN_DB.config.maxExportRows = math.floor(numericValue)
+      Print("row limit set to " .. WOW_MARKET_SCAN_DB.config.maxExportRows .. ".")
+      return
+    end
+
+    Print("usage: /wms rows all or /wms rows <positive number>")
     return
   end
 
-  Print("commands: /wms status, /wms clear")
+  if normalized == "status" or normalized == "" then
+    local count = #WOW_MARKET_SCAN_DB.pendingScans
+    local rowLimit = WOW_MARKET_SCAN_DB.config.maxExportRows
+    local rowLimitText = rowLimit == 0 and "all" or tostring(rowLimit)
+    Print(
+      WowMarketScan.Capture:GetStatus() .. "; " ..
+      count .. " pending scan(s); row limit " .. rowLimitText .. "."
+    )
+    return
+  end
+
+  Print("commands: /wms status, /wms clear, /wms rows all|<count>")
 end
 
 WowMarketScan.AddonName = ADDON_NAME

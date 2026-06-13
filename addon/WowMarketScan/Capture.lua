@@ -217,7 +217,7 @@ function Capture:Begin(rawFullScan)
     startedAtMs = debugprofilestop and debugprofilestop() or 0,
     itemLookup = {},
     scan = {
-      formatVersion = 3,
+      formatVersion = WowMarketScan.ScanFormatVersion,
       status = "capturing",
       capturedAt = startedAt,
       exportStartedAt = startedAt,

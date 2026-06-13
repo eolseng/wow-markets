@@ -2,6 +2,8 @@ WowMarketScan = WowMarketScan or {}
 
 local ADDON_NAME = ...
 local SCAN_COMPLETE_EVENT = "get_all_scan_complete"
+local DATABASE_SCHEMA_VERSION = 1
+local SCAN_FORMAT_VERSION = 3
 
 local DEFAULT_CONFIG = {
   maxExportRows = 100,
@@ -38,14 +40,24 @@ local function GetAddonVersion()
 end
 
 local function InitializeDatabase()
-  WOW_MARKET_SCAN_DB = WOW_MARKET_SCAN_DB or {}
-  WOW_MARKET_SCAN_DB.schemaVersion = 1
+  if type(WOW_MARKET_SCAN_DB) ~= "table" or
+      WOW_MARKET_SCAN_DB.schemaVersion ~= DATABASE_SCHEMA_VERSION then
+    WOW_MARKET_SCAN_DB = {}
+  end
+
+  WOW_MARKET_SCAN_DB.schemaVersion = DATABASE_SCHEMA_VERSION
   WOW_MARKET_SCAN_DB.config = WOW_MARKET_SCAN_DB.config or {}
   WOW_MARKET_SCAN_DB.pendingScans = WOW_MARKET_SCAN_DB.pendingScans or {}
 
   ApplyDefaults(WOW_MARKET_SCAN_DB.config, DEFAULT_CONFIG)
   NormalizeConfig(WOW_MARKET_SCAN_DB.config)
-  WOW_MARKET_SCAN_DB.config.captureOwner = nil
+
+  for index = #WOW_MARKET_SCAN_DB.pendingScans, 1, -1 do
+    local scan = WOW_MARKET_SCAN_DB.pendingScans[index]
+    if type(scan) ~= "table" or scan.formatVersion ~= SCAN_FORMAT_VERSION then
+      table.remove(WOW_MARKET_SCAN_DB.pendingScans, index)
+    end
+  end
 end
 
 local Listener = {}
@@ -121,5 +133,6 @@ end
 
 WowMarketScan.AddonName = ADDON_NAME
 WowMarketScan.ScanCompleteEvent = SCAN_COMPLETE_EVENT
+WowMarketScan.ScanFormatVersion = SCAN_FORMAT_VERSION
 WowMarketScan.GetAddonVersion = GetAddonVersion
 WowMarketScan.Print = Print

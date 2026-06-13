@@ -8,7 +8,7 @@ installation:
 
 ```sh
 ln -s /absolute/path/to/addon/WowMarketScan \
-  "/path/to/World of Warcraft/_classic_/Interface/AddOns/WowMarketScan"
+  "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WowMarketScan"
 ```
 
 After an Auctionator full scan:
@@ -27,7 +27,8 @@ Capture controls:
 
 `rows all` enables a complete export. The addon compacts the payload in
 250-row timer batches and reports progress through `/wms status`. New captures
-use a dictionary format that stores each unique item identity once per scan.
+use SavedVariables format 3, which stores each unique item identity once per
+scan. Earlier development formats are intentionally unsupported.
 
 The export is written to the account-wide SavedVariables file when the client
 reloads its UI or exits normally.

@@ -17,18 +17,17 @@ After an Auctionator full scan:
 /wms status
 ```
 
-Capture controls:
+Queue controls:
 
 ```text
-/wms rows 100
-/wms rows all
 /wms clear
 ```
 
-`rows all` enables a complete export. The addon compacts the payload in
-250-row timer batches and reports progress through `/wms status`. New captures
-use SavedVariables format 3, which stores each unique item identity once per
-scan. Earlier development formats are intentionally unsupported.
+The addon always exports every row from the Auctionator full-scan payload. It
+compacts the payload in 250-row timer batches and reports progress through
+`/wms status`. New captures use SavedVariables format 3, which stores each
+unique item identity once per scan. Earlier development formats are
+intentionally unsupported.
 
 The export is written to the account-wide SavedVariables file when the client
 reloads its UI or exits normally.

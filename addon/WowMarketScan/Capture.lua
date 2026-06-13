@@ -172,7 +172,7 @@ local function ProcessBatch()
     return
   end
 
-  local stopAt = math.min(active.nextRow + BATCH_SIZE - 1, active.exportLimit)
+  local stopAt = math.min(active.nextRow + BATCH_SIZE - 1, active.sourceRowCount)
   for row = active.nextRow, stopAt do
     table.insert(
       active.scan.rows,
@@ -181,7 +181,7 @@ local function ProcessBatch()
   end
 
   active.nextRow = stopAt + 1
-  if active.nextRow > active.exportLimit then
+  if active.nextRow > active.sourceRowCount then
     Finish()
     return
   end
@@ -200,19 +200,14 @@ function Capture:Begin(rawFullScan)
     return
   end
 
-  local config = WOW_MARKET_SCAN_DB.config
   local sourceRowCount = #rawFullScan
-  local exportLimit = sourceRowCount
-  if config.maxExportRows > 0 then
-    exportLimit = math.min(sourceRowCount, config.maxExportRows)
-  end
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   local scanner = GetScannerIdentity()
   local startedAt = GetServerTime and GetServerTime() or time()
 
   self.active = {
     rawFullScan = rawFullScan,
-    exportLimit = exportLimit,
+    sourceRowCount = sourceRowCount,
     nextRow = 1,
     startedAtMs = debugprofilestop and debugprofilestop() or 0,
     itemLookup = {},
@@ -236,7 +231,7 @@ function Capture:Begin(rawFullScan)
       sourceRowCount = sourceRowCount,
       exportedRowCount = 0,
       itemCount = 0,
-      truncated = exportLimit < sourceRowCount,
+      truncated = false,
       itemFields = ITEM_FIELDS,
       items = {},
       rowFields = ROW_FIELDS,
@@ -244,7 +239,7 @@ function Capture:Begin(rawFullScan)
     },
   }
 
-  if exportLimit == 0 then
+  if sourceRowCount == 0 then
     Finish()
     return
   end
@@ -262,8 +257,8 @@ function Capture:GetStatus()
   end
 
   return "capturing " ..
-    math.min(self.active.nextRow - 1, self.active.exportLimit) ..
-    "/" .. self.active.exportLimit
+    math.min(self.active.nextRow - 1, self.active.sourceRowCount) ..
+    "/" .. self.active.sourceRowCount
 end
 
 WowMarketScan.Capture = Capture

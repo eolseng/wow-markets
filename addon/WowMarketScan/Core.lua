@@ -6,7 +6,6 @@ local DATABASE_SCHEMA_VERSION = 1
 local SCAN_FORMAT_VERSION = 3
 
 local DEFAULT_CONFIG = {
-  maxExportRows = 100,
   maxPendingScans = 3,
 }
 
@@ -19,11 +18,6 @@ local function ApplyDefaults(target, defaults)
 end
 
 local function NormalizeConfig(config)
-  if type(config.maxExportRows) ~= "number" or config.maxExportRows < 0 then
-    config.maxExportRows = DEFAULT_CONFIG.maxExportRows
-  end
-  config.maxExportRows = math.floor(config.maxExportRows)
-
   if type(config.maxPendingScans) ~= "number" or config.maxPendingScans < 1 then
     config.maxPendingScans = DEFAULT_CONFIG.maxPendingScans
   end
@@ -51,6 +45,7 @@ local function InitializeDatabase()
 
   ApplyDefaults(WOW_MARKET_SCAN_DB.config, DEFAULT_CONFIG)
   NormalizeConfig(WOW_MARKET_SCAN_DB.config)
+  WOW_MARKET_SCAN_DB.config.maxExportRows = nil
 
   for index = #WOW_MARKET_SCAN_DB.pendingScans, 1, -1 do
     local scan = WOW_MARKET_SCAN_DB.pendingScans[index]
@@ -91,7 +86,6 @@ end)
 SLASH_WOWMARKETSCAN1 = "/wms"
 SlashCmdList.WOWMARKETSCAN = function(command)
   local normalized = string.lower(command or "")
-  local rowValue = string.match(normalized, "^rows%s+(.+)$")
 
   if normalized == "clear" then
     WOW_MARKET_SCAN_DB.pendingScans = {}
@@ -99,36 +93,16 @@ SlashCmdList.WOWMARKETSCAN = function(command)
     return
   end
 
-  if rowValue then
-    if rowValue == "all" then
-      WOW_MARKET_SCAN_DB.config.maxExportRows = 0
-      Print("row limit set to all; full exports may create large SavedVariables files.")
-      return
-    end
-
-    local numericValue = tonumber(rowValue)
-    if numericValue and numericValue >= 1 then
-      WOW_MARKET_SCAN_DB.config.maxExportRows = math.floor(numericValue)
-      Print("row limit set to " .. WOW_MARKET_SCAN_DB.config.maxExportRows .. ".")
-      return
-    end
-
-    Print("usage: /wms rows all or /wms rows <positive number>")
-    return
-  end
-
   if normalized == "status" or normalized == "" then
     local count = #WOW_MARKET_SCAN_DB.pendingScans
-    local rowLimit = WOW_MARKET_SCAN_DB.config.maxExportRows
-    local rowLimitText = rowLimit == 0 and "all" or tostring(rowLimit)
     Print(
       WowMarketScan.Capture:GetStatus() .. "; " ..
-      count .. " pending scan(s); row limit " .. rowLimitText .. "."
+      count .. " pending scan(s); complete scan export enabled."
     )
     return
   end
 
-  Print("commands: /wms status, /wms clear, /wms rows all|<count>")
+  Print("commands: /wms status, /wms clear")
 end
 
 WowMarketScan.AddonName = ADDON_NAME

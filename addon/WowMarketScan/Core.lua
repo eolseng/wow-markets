@@ -3,7 +3,7 @@ WowMarketScan = WowMarketScan or {}
 local ADDON_NAME = ...
 local SCAN_COMPLETE_EVENT = "get_all_scan_complete"
 local DATABASE_SCHEMA_VERSION = 1
-local SCAN_FORMAT_VERSION = 3
+local SCAN_FORMAT_VERSION = 4
 
 local DEFAULT_CONFIG = {
   maxPendingScans = 3,
@@ -102,7 +102,18 @@ SlashCmdList.WOWMARKETSCAN = function(command)
     return
   end
 
-  Print("commands: /wms status, /wms clear")
+  if normalized == "location" then
+    local location = WowMarketScan.Capture:GetLocation()
+    Print(
+      "location: " .. location.zone ..
+      " / " .. location.subzone ..
+      " (map " .. location.uiMapID .. "); AH " ..
+      location.auctionHouse .. "."
+    )
+    return
+  end
+
+  Print("commands: /wms status, /wms location, /wms clear")
 end
 
 WowMarketScan.AddonName = ADDON_NAME

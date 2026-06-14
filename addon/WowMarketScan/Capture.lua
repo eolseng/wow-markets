@@ -41,6 +41,24 @@ local REGION_CODES = {
   [5] = "cn",
 }
 
+local NEUTRAL_AUCTION_HOUSE_MAPS = {
+  [1434] = true, -- Stranglethorn Vale / Booty Bay
+  [1446] = true, -- Tanaris / Gadgetzan
+  [1452] = true, -- Winterspring / Everlook
+}
+
+local NEUTRAL_AUCTION_HOUSE_ZONES = {
+  ["Stranglethorn Vale"] = true,
+  ["Tanaris"] = true,
+  ["Winterspring"] = true,
+}
+
+local NEUTRAL_AUCTION_HOUSE_SUBZONES = {
+  ["Booty Bay"] = true,
+  ["Gadgetzan"] = true,
+  ["Everlook"] = true,
+}
+
 local Capture = {
   active = nil,
 }
@@ -133,6 +151,28 @@ local function GetScannerIdentity()
   }
 end
 
+local function GetCaptureLocation()
+  local zone = GetZoneText and GetZoneText() or ""
+  local subzone = GetSubZoneText and GetSubZoneText() or ""
+  local uiMapID = 0
+
+  if C_Map and C_Map.GetBestMapForUnit then
+    uiMapID = C_Map.GetBestMapForUnit("player") or 0
+  end
+
+  local isNeutral =
+    NEUTRAL_AUCTION_HOUSE_MAPS[uiMapID] or
+    NEUTRAL_AUCTION_HOUSE_ZONES[zone] or
+    NEUTRAL_AUCTION_HOUSE_SUBZONES[subzone]
+
+  return {
+    zone = zone,
+    subzone = subzone,
+    uiMapID = uiMapID,
+    auctionHouse = isNeutral and "neutral" or "faction",
+  }
+end
+
 local function TrimQueue()
   local pendingScans = WOW_MARKET_SCAN_DB.pendingScans
   local maxPendingScans = WOW_MARKET_SCAN_DB.config.maxPendingScans
@@ -203,6 +243,7 @@ function Capture:Begin(rawFullScan)
   local sourceRowCount = #rawFullScan
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   local scanner = GetScannerIdentity()
+  local location = GetCaptureLocation()
   local startedAt = GetServerTime and GetServerTime() or time()
 
   self.active = {
@@ -219,7 +260,10 @@ function Capture:Begin(rawFullScan)
       exportBatchSize = BATCH_SIZE,
       realm = GetRealmName() or "",
       faction = UnitFactionGroup("player") or "",
-      auctionHouse = "unknown",
+      auctionHouse = location.auctionHouse,
+      captureZone = location.zone,
+      captureSubzone = location.subzone,
+      captureUiMapID = location.uiMapID,
       scannerCharacterName = scanner.name,
       scannerCharacterRealm = scanner.realm,
       scannerCharacterGUID = scanner.guid,
@@ -249,6 +293,10 @@ end
 
 function Capture:IsActive()
   return self.active ~= nil
+end
+
+function Capture:GetLocation()
+  return GetCaptureLocation()
 end
 
 function Capture:GetStatus()

@@ -15,6 +15,7 @@ After an Auctionator full scan:
 
 ```text
 /wms status
+/wms location
 ```
 
 Queue controls:
@@ -25,9 +26,15 @@ Queue controls:
 
 The addon always exports every row from the Auctionator full-scan payload. It
 compacts the payload in 250-row timer batches and reports progress through
-`/wms status`. New captures use SavedVariables format 3, which stores each
+`/wms status`. New captures use SavedVariables format 4, which stores each
 unique item identity once per scan. Earlier development formats are
 intentionally unsupported.
+
+At scan completion, the addon records the player's zone, subzone, and Classic
+UI map ID. Stranglethorn Vale/Booty Bay, Tanaris/Gadgetzan, and
+Winterspring/Everlook are classified as neutral Auction Houses. Other
+locations are classified as the player's faction Auction House.
+`/wms location` prints the current inputs and classification without scanning.
 
 The export is written to the account-wide SavedVariables file when the client
 reloads its UI or exits normally.

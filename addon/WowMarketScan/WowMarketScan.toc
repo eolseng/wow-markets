@@ -2,7 +2,7 @@
 ## Title: WoW Market Scan
 ## Notes: Captures Auctionator full scans for external market analysis.
 ## Author: eolseng
-## Version: 0.3.0-dev
+## Version: 0.4.0-dev
 ## Dependencies: Auctionator
 ## SavedVariables: WOW_MARKET_SCAN_DB
 

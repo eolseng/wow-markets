@@ -243,6 +243,10 @@ function Capture:Begin(rawFullScan)
   local sourceRowCount = #rawFullScan
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   local scanner = GetScannerIdentity()
+  if scanner.region == "unknown" then
+    WowMarketScan.Print("could not determine the game region; scan was not captured.")
+    return
+  end
   local location = GetCaptureLocation()
   local startedAt = GetServerTime and GetServerTime() or time()
 
@@ -258,6 +262,7 @@ function Capture:Begin(rawFullScan)
       capturedAt = startedAt,
       exportStartedAt = startedAt,
       exportBatchSize = BATCH_SIZE,
+      region = scanner.region,
       realm = GetRealmName() or "",
       faction = UnitFactionGroup("player") or "",
       auctionHouse = location.auctionHouse,

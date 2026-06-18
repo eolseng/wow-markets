@@ -26,7 +26,8 @@ Queue controls:
 
 The addon always exports every row from the Auctionator full-scan payload. It
 compacts the payload in 250-row timer batches and reports progress through
-`/wms status`. New captures use SavedVariables format 4, which stores each
+`/wms status`. New captures use SavedVariables format 5, which stores the game
+region and each
 unique item identity once per scan. Earlier development formats are
 intentionally unsupported.
 

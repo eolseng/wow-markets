@@ -3,7 +3,7 @@ WowMarketScan = WowMarketScan or {}
 local ADDON_NAME = ...
 local SCAN_COMPLETE_EVENT = "get_all_scan_complete"
 local DATABASE_SCHEMA_VERSION = 1
-local SCAN_FORMAT_VERSION = 4
+local SCAN_FORMAT_VERSION = 5
 
 local DEFAULT_CONFIG = {
   maxPendingScans = 3,

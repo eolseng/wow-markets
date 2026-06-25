@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "wow-market-scan",
+  "outputfilename": "Wow Market Scan",
+  "frontend:dir": "frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+  "assetdir": "frontend/dist",
+  "wailsjsdir": "frontend/wailsjs",
+  "version": "2",
+  "info": {
+    "companyName": "Wow Market Scan",
+    "productName": "Wow Market Scan",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright 2026 Wow Market Scan",
+    "comments": "Companion app prototype for tray behavior validation."
+  }
+}

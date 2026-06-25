@@ -1,0 +1,6 @@
+/build/*
+!/build/darwin/
+/build/darwin/*
+!/build/darwin/Info.plist
+!/build/darwin/Info.dev.plist
+/frontend/wailsjs/

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wow Market Scan</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Wow Market Scan</p>
+          <h1>Companion</h1>
+        </div>
+        <div class="top-actions">
+          <div class="runtime-state">
+            <span class="dot" id="runtime-dot"></span>
+            <span id="runtime-label">Loading</span>
+          </div>
+          <select id="view-select" aria-label="View">
+            <option value="overview">Overview</option>
+            <option value="settings">Settings</option>
+            <option value="uploads">Uploads</option>
+          </select>
+        </div>
+      </header>
+
+      <section class="page" data-page="overview">
+        <section class="hero-card" id="flow-card">
+          <div class="status-orb" id="status-orb"></div>
+          <div class="hero-copy">
+            <span id="flow-kicker">Checking setup</span>
+            <h2 id="flow-title">Preparing companion</h2>
+            <p id="flow-summary">Loading current account, installation, and scan file status.</p>
+          </div>
+        </section>
+
+        <section class="steps" aria-label="Setup progress">
+          <button class="step" data-view-jump="settings" type="button">
+            <span class="step-dot" id="account-step-dot"></span>
+            <strong>Login</strong>
+            <small id="account-step-text">Required</small>
+          </button>
+          <button class="step" data-view-jump="settings" type="button">
+            <span class="step-dot" id="installation-step-dot"></span>
+            <strong>Enrollment</strong>
+            <small id="installation-step-text">Required</small>
+          </button>
+          <button class="step" data-view-jump="settings" type="button">
+            <span class="step-dot" id="scan-step-dot"></span>
+            <strong>Scan files</strong>
+            <small id="scan-step-text">Required</small>
+          </button>
+        </section>
+
+        <section class="panel action-panel" id="current-action-panel">
+          <form id="login-form" class="flow-form">
+            <div class="panel-heading">
+              <h2>Sign In</h2>
+              <span class="badge" id="account-status">Not signed in</span>
+            </div>
+            <label>
+              <span>Email</span>
+              <input autocomplete="email" id="login-email" name="email" type="email" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input autocomplete="current-password" id="login-password" name="password" type="password" required />
+            </label>
+            <button data-action id="login-button" type="submit">Sign in</button>
+          </form>
+
+          <form id="enroll-form" class="flow-form" hidden>
+            <div class="panel-heading">
+              <h2>Enroll Installation</h2>
+              <span class="badge" id="enrollment-status">Not enrolled</span>
+            </div>
+            <label>
+              <span>Device name</span>
+              <input autocomplete="off" id="installation-name" name="installation_name" required />
+            </label>
+            <button data-action id="enroll-button" type="submit">Enroll this device</button>
+          </form>
+
+          <div id="scan-flow" class="flow-form" hidden>
+            <div class="panel-heading">
+              <h2>Find Scan Files</h2>
+              <span class="badge" id="scan-status">Not detected</span>
+            </div>
+            <p class="muted" id="scan-help">Choose your World of Warcraft folder, or let the companion search standard install locations.</p>
+            <div class="actions">
+              <button data-action id="discover-button" type="button">Auto-detect</button>
+              <button data-action class="secondary" id="select-wow-folder-button" type="button">Choose WoW folder</button>
+            </div>
+          </div>
+
+          <div id="ready-flow" class="ready-flow" hidden>
+            <div>
+              <h2>Ready</h2>
+              <p id="ready-summary">The companion is configured and watching for scans.</p>
+            </div>
+            <div class="mini-stats">
+              <span><strong id="uploaded-count">0</strong> uploaded</span>
+              <span><strong id="queued-count">0</strong> queued</span>
+              <span><strong id="failed-count">0</strong> failed</span>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="page" data-page="settings" hidden>
+        <section class="panel settings-panel">
+          <div class="panel-heading">
+            <h2>Settings</h2>
+          </div>
+
+          <section class="settings-section">
+            <div class="settings-heading">
+              <h3>Account</h3>
+              <span class="badge" id="account-page-status">Not signed in</span>
+            </div>
+            <div class="summary" id="account-summary" hidden>
+              <strong id="account-name">Signed in</strong>
+              <span id="account-email"></span>
+            </div>
+            <form id="account-login-form" class="flow-form">
+              <label>
+                <span>Email</span>
+                <input autocomplete="email" id="account-login-email" type="email" required />
+              </label>
+              <label>
+                <span>Password</span>
+                <input autocomplete="current-password" id="account-login-password" type="password" required />
+              </label>
+              <button data-action id="account-login-button" type="submit">Sign in</button>
+            </form>
+            <div class="actions" id="account-actions">
+              <button data-action class="secondary" id="signout-button" type="button">Sign out</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-heading">
+              <h3>Installation</h3>
+              <span class="badge" id="installation-page-status">Not enrolled</span>
+            </div>
+            <form id="installation-enroll-form" class="flow-form">
+              <label>
+                <span>Device name</span>
+                <input autocomplete="off" id="installation-page-name" required />
+              </label>
+              <button data-action id="installation-enroll-button" type="submit">Enroll this device</button>
+            </form>
+            <div class="summary" id="installation-summary" hidden>
+              <strong id="enrolled-name">This device</strong>
+              <span id="token-prefix">Token stored</span>
+            </div>
+            <p class="muted" id="installation-blocked" hidden>Sign in before enrolling this installation.</p>
+            <div class="actions" id="installation-actions">
+              <button data-action class="secondary" id="remove-enrollment-button" type="button">Remove enrollment</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-heading">
+              <h3>Scan Files</h3>
+              <span class="badge" id="scan-page-status">Not detected</span>
+            </div>
+            <div class="summary">
+              <strong id="scan-summary">No scan file detected</strong>
+              <span id="scan-detail"></span>
+            </div>
+            <div class="detail-list compact-detail-list">
+              <span>WoW folder</span>
+              <strong id="wow-folder">Not selected</strong>
+              <span>Selected account</span>
+              <strong id="selected-account">None</strong>
+            </div>
+            <div class="actions">
+              <button data-action id="scan-discover-button" type="button">Auto-detect</button>
+              <button data-action class="secondary" id="scan-select-wow-folder-button" type="button">Choose WoW folder</button>
+            </div>
+          </section>
+
+          <section class="settings-section detected-section">
+            <div class="settings-heading">
+              <h3>Detected Accounts</h3>
+              <span class="badge" id="candidate-count">0 found</span>
+            </div>
+            <div class="candidate-list" id="candidate-list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section class="page" data-page="uploads" hidden>
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Uploads</h2>
+            <span class="badge" id="watcher-state">Stopped</span>
+          </div>
+          <div class="upload-grid">
+            <div><strong id="uploads-page-uploaded">0</strong><span>Uploaded</span></div>
+            <div><strong id="archived-count">0</strong><span>Archived</span></div>
+            <div><strong id="uploads-page-queued">0</strong><span>Queued</span></div>
+            <div><strong id="uploads-page-failed">0</strong><span>Failed</span></div>
+          </div>
+          <div class="detail-list">
+            <span>Last upload</span>
+            <strong id="last-upload">None</strong>
+            <span>Last archive</span>
+            <strong id="last-archive">None</strong>
+            <span>Last event</span>
+            <strong id="last-event">None</strong>
+            <span>Error</span>
+            <strong id="last-error">None</strong>
+          </div>
+          <div class="actions">
+            <button data-action id="start-button" type="button">Start watcher</button>
+            <button data-action class="secondary" id="stop-button" type="button">Stop watcher</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

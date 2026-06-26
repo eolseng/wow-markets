@@ -34,6 +34,27 @@ cd companion
 go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 build
 ```
 
+## macOS Signing
+
+The `Companion Build` GitHub Actions workflow ad-hoc signs macOS artifacts when
+Apple signing secrets are not configured. To produce a Gatekeeper-friendly
+notarized macOS artifact, configure these repository secrets:
+
+- `APPLE_DEVELOPER_ID_CERTIFICATE_BASE64`: base64-encoded `.p12` export of the
+  Developer ID Application certificate.
+- `APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD`: password for the `.p12` export.
+- `APPLE_DEVELOPER_ID_APPLICATION`: optional codesign identity, for example
+  `Developer ID Application: Example Name (TEAMID)`. If omitted, CI uses the
+  first Developer ID Application identity from the certificate.
+- `APPLE_CODESIGN_KEYCHAIN_PASSWORD`: optional temporary CI keychain password.
+- `APPLE_ID`: Apple ID used for notarization.
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
+- `APPLE_TEAM_ID`: Apple Developer Team ID.
+
+When those secrets are present, CI signs with hardened runtime, submits the app
+to Apple's notary service, staples the notarization ticket, verifies Gatekeeper
+assessment, then uploads the final zip artifact.
+
 ## Runtime Behavior
 
 - macOS uses a native AppKit status item in the menu bar.

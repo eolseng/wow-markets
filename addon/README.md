@@ -1,44 +1,52 @@
-# Addon development
+# WowMarketScan addon
 
-`WowMarketScan` is a companion addon and declares Auctionator as a required
-dependency. It targets the TBC Classic interface version `20505`.
+`WowMarketScan` piggybacks on Auctionator (a required dependency) so
+contributors never scan twice: when Auctionator's full scan completes, the
+addon compacts the payload in 250-row timer batches and appends a
+SavedVariables format 5 record — the game region and each unique item identity
+stored once per scan. It targets the TBC Classic Anniversary client
+(interface `20505`).
 
-For local development, link the addon directory into the relevant game
-installation:
+The handoff to the companion app is the account-wide SavedVariables file,
+written when the client reloads its UI or exits normally:
+
+```text
+World of Warcraft/_anniversary_/WTF/Account/<ACCOUNT>/SavedVariables/WowMarketScan.lua
+```
+
+The record layout is documented in
+[docs/formats/saved-variables.md](../docs/formats/saved-variables.md).
+
+## Install for development
+
+Link the addon into the game installation:
 
 ```sh
 ln -s /absolute/path/to/addon/WowMarketScan \
   "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WowMarketScan"
 ```
 
-After an Auctionator full scan:
+## Slash commands
 
-```text
-/wms status
-/wms location
-```
+- `/wms status` — capture progress and pending scan count.
+- `/wms location` — current zone, subzone, map ID, and Auction House
+  classification without scanning.
+- `/wms clear` — empty the pending scan queue.
 
-Queue controls:
+## Behavior notes
 
-```text
-/wms clear
-```
-
-The addon always exports every row from the Auctionator full-scan payload. It
-compacts the payload in 250-row timer batches and reports progress through
-`/wms status`. New captures use SavedVariables format 5, which stores the game
-region and each
-unique item identity once per scan. Earlier development formats are
-intentionally unsupported.
-
-At scan completion, the addon records the player's zone, subzone, and Classic
-UI map ID. Stranglethorn Vale/Booty Bay, Tanaris/Gadgetzan, and
-Winterspring/Everlook are classified as neutral Auction Houses. Other
-locations are classified as the player's faction Auction House.
-`/wms location` prints the current inputs and classification without scanning.
-
-The export is written to the account-wide SavedVariables file when the client
-reloads its UI or exits normally.
-
-Do not edit the SavedVariables file while the game client is running. The
-client may overwrite external changes.
+- The pending queue holds at most 3 scans; finishing a new capture silently
+  evicts the oldest. Upload regularly (keep the companion running) to avoid
+  losing scans.
+- An in-progress capture lives only in memory; only `ready` scans reach
+  SavedVariables. A new Auctionator scan is ignored while a capture is active,
+  and a capture is dropped entirely if the game region cannot be determined.
+- At completion the addon records zone, subzone, and Classic UI map ID.
+  Stranglethorn Vale/Booty Bay, Tanaris/Gadgetzan, and Winterspring/Everlook
+  classify as neutral Auction Houses; everywhere else is the player's faction
+  Auction House.
+- Every row of the Auctionator payload is exported; listing owner names are
+  not captured. Earlier development formats are intentionally unsupported and
+  purged at load.
+- Do not edit the SavedVariables file while the game client runs; the client
+  overwrites external changes.

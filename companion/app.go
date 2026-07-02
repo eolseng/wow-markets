@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eolseng/wow-markets/internal/companionauth"
-	"github.com/eolseng/wow-markets/internal/scanfile"
-	"github.com/eolseng/wow-markets/internal/watchagent"
-	"github.com/eolseng/wow-markets/internal/wowinstall"
+	"github.com/eolseng/wow-markets/companion/internal/companionauth"
+	"github.com/eolseng/wow-markets/companion/internal/scanfile"
+	"github.com/eolseng/wow-markets/companion/internal/watchagent"
+	"github.com/eolseng/wow-markets/companion/internal/wowinstall"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -113,10 +113,6 @@ func (app *App) Quit() {
 	if ctx != nil {
 		runtime.Quit(ctx)
 	}
-}
-
-func (app *App) Status() string {
-	return app.Snapshot().LastMessage
 }
 
 type Snapshot struct {
@@ -586,10 +582,6 @@ func (app *App) RemoveEnrollment() (Snapshot, error) {
 	snapshot := app.snapshotLocked()
 	app.mu.Unlock()
 	return snapshot, err
-}
-
-func (app *App) Logout() (Snapshot, error) {
-	return app.RemoveEnrollment()
 }
 
 func (app *App) StartWatcher() (Snapshot, error) {

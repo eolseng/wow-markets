@@ -3,11 +3,17 @@
 package main
 
 import (
+	_ "embed"
 	"log"
 
 	"github.com/ra1phdd/systray-on-wails"
-	"github.com/ra1phdd/systray-on-wails/example/icon"
 )
+
+// White rendition of the bar-chart icon drawn natively for macOS in
+// status_item_darwin.go; regenerate with `go run assets/generate_tray_icon.go`.
+//
+//go:embed assets/tray.ico
+var trayIcon []byte
 
 func registerStatusItem(app *App) {
 	systray.Register(func() {
@@ -26,7 +32,7 @@ func stopStatusItem() {
 func activateVisibleWindow() {}
 
 func onWindowsStatusItemReady(app *App) {
-	systray.SetTemplateIcon(icon.Data, icon.Data)
+	systray.SetIcon(trayIcon)
 	systray.SetTitle("WMS")
 	systray.SetTooltip("Wow Market Scan is running")
 

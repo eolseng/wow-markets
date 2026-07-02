@@ -13,6 +13,6 @@
     "productName": "Wow Market Scan",
     "productVersion": "0.1.0",
     "copyright": "Copyright 2026 Wow Market Scan",
-    "comments": "Companion app prototype for tray behavior validation."
+    "comments": "Desktop companion that uploads WoW Market Scan captures to the WoW Markets API."
   }
 }

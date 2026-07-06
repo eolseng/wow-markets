@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	productionAPIURL = "https://api.wowmarkets.com"
+	productionAPIURL = "https://api.wowmarkets.app"
 	configDirName    = "WowMarketScan"
 	configFileName   = "config.json"
 )

@@ -6,7 +6,7 @@ installation, discovers the WoW Anniversary `WowMarketScan.lua` SavedVariables
 file, and then watches it in the background: every new scan is archived
 locally as canonical gzip JSON and uploaded to `POST /v1/scans`.
 
-The API URL is hardcoded to production (`https://wow-markets.onrender.com` in
+The API URL is hardcoded to production (`https://api.wowmarkets.com` in
 `config.go`) — there is no dev/staging switch, so `wails dev` also talks to
 production.
 

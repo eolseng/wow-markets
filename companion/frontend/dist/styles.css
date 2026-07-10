@@ -295,7 +295,7 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
 .settings-copy { min-width: 0; }
 .settings-copy h2, .settings-copy strong { margin: 0; color: #e4e9f1; font-size: 12px; }
 .settings-copy p, .settings-copy small { display: block; overflow-wrap: anywhere; margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
-.settings-actions, .diagnostic-grid, .settings-token-form, .settings-note, .account-list { grid-column: 1 / -1; }
+.settings-actions, .diagnostic-grid, .settings-token-form, .settings-note, .account-list, .update-channel { grid-column: 1 / -1; }
 .diagnostic-grid { display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 7px 10px; border: 1px solid var(--border); border-radius: 9px; background: rgba(4,9,17,.3); padding: 9px 10px; }
 .diagnostic-grid span { color: var(--faint); font-size: 9px; }
 .diagnostic-grid strong { overflow-wrap: anywhere; color: #b9c4d3; font-size: 9px; font-weight: 700; }
@@ -314,6 +314,9 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
 .toggle-row input:checked + .toggle-control::after { background: var(--gold); transform: translateX(16px); }
 .toggle-row input:focus-visible + .toggle-control { outline: 2px solid var(--gold); outline-offset: 2px; }
 .toggle-row input:disabled + .toggle-control { opacity: .45; }
+.update-channel { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; }
+.update-channel select { min-width: 118px; border: 1px solid var(--border-strong); border-radius: 8px; background: #111b2b; color: var(--text); font: inherit; padding: 7px 28px 7px 9px; }
+.update-channel select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .about-section { align-items: start; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

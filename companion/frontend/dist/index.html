@@ -188,6 +188,23 @@
             </label>
           </div>
 
+          <div class="settings-section update-section">
+            <div class="settings-copy"><h2>Updates</h2><p id="update-message">Checking update settings.</p></div>
+            <span class="status-badge" id="update-status">Checking</span>
+            <label class="update-channel" for="update-channel">
+              <span>Channel</span>
+              <select data-action id="update-channel">
+                <option value="stable">Stable</option>
+                <option value="beta">Beta</option>
+              </select>
+            </label>
+            <div class="settings-actions update-actions">
+              <button class="secondary-button" data-action id="update-check-button" type="button">Check now</button>
+              <button data-action id="update-install-button" type="button" hidden>Review update</button>
+              <button class="secondary-button" data-action id="update-defer-button" type="button" hidden>Later</button>
+            </div>
+          </div>
+
           <div class="settings-section about-section">
             <div class="settings-copy"><h2>About</h2><p>WoW Markets Companion <span id="app-version">Version unavailable</span></p></div>
             <div class="diagnostic-grid">

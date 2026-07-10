@@ -1,6 +1,7 @@
 import {
   accountListSignature,
   deriveView,
+  deriveUpdaterView,
   heroAnnouncementSignature,
 } from "./view-model.mjs"
 
@@ -59,6 +60,12 @@ const elements = {
   startingPhase: $("#starting-phase"),
   tokenForm: $("#token-form"),
   tokenInput: $("#token-input"),
+  updateChannel: $("#update-channel"),
+  updateCheckButton: $("#update-check-button"),
+  updateDeferButton: $("#update-defer-button"),
+  updateInstallButton: $("#update-install-button"),
+  updateMessage: $("#update-message"),
+  updateStatus: $("#update-status"),
   uploadedCount: $("#uploaded-count"),
   waitingCount: $("#waiting-count"),
 }
@@ -258,12 +265,27 @@ function renderSettings(snapshot) {
   elements.settingsAccount.textContent = snapshot.selected_account || "—"
   renderAccounts(snapshot.discoveries || [], snapshot.scan_file_path)
 
+  renderUpdater(snapshot.updater || {})
   elements.launchAtLoginSection.hidden = !snapshot.launch_at_login_supported
   elements.launchAtLoginToggle.checked = Boolean(snapshot.launch_at_login)
   elements.launchAtLoginToggle.disabled = state.busy || !snapshot.launch_at_login_supported
   elements.appVersion.textContent = snapshot.version ? `v${snapshot.version}` : "Version unavailable"
   elements.settingsDataDir.textContent = snapshot.data_dir || "—"
   elements.settingsWatcherState.textContent = snapshot.running ? "Running in the background" : snapshot.ready ? "Starting" : "Waiting for setup"
+}
+
+function renderUpdater(updater) {
+  const view = deriveUpdaterView(updater)
+  setBadge(elements.updateStatus, view.label, view.tone)
+  elements.updateMessage.textContent = view.message
+  elements.updateChannel.value = updater.channel || "stable"
+  elements.updateChannel.disabled = state.busy || !updater.enabled
+  elements.updateCheckButton.disabled = state.busy || !view.canCheck
+  elements.updateInstallButton.hidden = !view.action
+  elements.updateInstallButton.disabled = state.busy || !view.action
+  elements.updateInstallButton.textContent = view.action || "Review update"
+  elements.updateDeferButton.hidden = !view.canDefer
+  elements.updateDeferButton.disabled = state.busy || !view.canDefer
 }
 
 function renderAccounts(candidates, selectedPath) {
@@ -478,6 +500,22 @@ for (const selector of ["#addon-check-button", "#scan-check-button", "#refresh-s
 elements.launchAtLoginToggle.addEventListener("change", () => {
   const enabled = elements.launchAtLoginToggle.checked
   run(() => backend().SetLaunchAtLogin(enabled))
+})
+
+elements.updateChannel.addEventListener("change", () => {
+  run(() => backend().SetUpdateChannel(elements.updateChannel.value))
+})
+
+elements.updateCheckButton.addEventListener("click", () => {
+  run(() => backend().CheckForUpdates())
+})
+
+elements.updateInstallButton.addEventListener("click", () => {
+  run(() => backend().InstallUpdate())
+})
+
+elements.updateDeferButton.addEventListener("click", () => {
+  run(() => backend().DeferUpdate())
 })
 
 window.addEventListener("DOMContentLoaded", () => {

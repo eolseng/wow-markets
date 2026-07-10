@@ -8,6 +8,11 @@ Audited 2026-07-10 against `companion/go.mod` and `companion/go.sum`.
 - The vendored `github.com/ra1phdd/systray-on-wails` fork is Apache-2.0. Its
   license is retained beside the source.
 - Auctionator is a runtime dependency of the addon and is not redistributed.
+- Official macOS builds redistribute the pinned Sparkle 2.9.4 binary
+  distribution under its MIT License. The release workflow verifies archive
+  SHA-256
+  `ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9`
+  before embedding it and copies the retained license into the app bundle.
 
 ## Vendored systray provenance
 

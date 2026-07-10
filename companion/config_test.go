@@ -30,6 +30,27 @@ func TestCompanionVersionComesFromWailsConfig(t *testing.T) {
 	}
 }
 
+func TestUpdatePreferencesPersistWithExistingConfiguration(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	config := companionConfig{
+		DeferredUpdateVersion: "1.1.0",
+		ScanFilePath:          "/tmp/scan.lua",
+		TokenPrefix:           "wms1_example",
+		UpdateChannel:         "beta",
+		WowInstallPath:        "/tmp/wow",
+	}
+	if err := saveConfig(config); err != nil {
+		t.Fatalf("saveConfig() error = %v", err)
+	}
+	loaded, err := loadConfig()
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if loaded != config {
+		t.Fatalf("loadConfig() = %#v, want %#v", loaded, config)
+	}
+}
+
 func TestConfiguredServiceEndpointsRequireExplicitDevelopmentOverride(t *testing.T) {
 	t.Setenv("WOW_MARKETS_API_URL", "https://example.invalid/")
 	t.Setenv("WOW_MARKETS_INSTALLATIONS_URL", "https://example.invalid/installations")

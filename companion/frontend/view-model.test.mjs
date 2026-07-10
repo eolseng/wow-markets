@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import {
   accountListSignature,
   deriveView,
+  deriveUpdaterView,
   heroAnnouncementSignature,
 } from "./dist/view-model.mjs"
 
@@ -108,4 +109,18 @@ test("keeps render signatures stable for unchanged polled snapshots", () => {
     heroAnnouncementSignature(view),
     heroAnnouncementSignature(structuredClone(view)),
   )
+})
+
+test("keeps updater states calm and explicit", () => {
+  assert.deepEqual(
+    deriveUpdaterView({ status: "offline", enabled: true }).label,
+    "Offline",
+  )
+  const ready = deriveUpdaterView({ status: "ready", available_version: "1.1.0", mandatory: false })
+  assert.equal(ready.action, "Install and restart")
+  assert.equal(ready.canDefer, true)
+
+  const required = deriveUpdaterView({ status: "available", available_version: "1.2.0", mandatory: true })
+  assert.equal(required.label, "Required")
+  assert.equal(required.canDefer, false)
 })

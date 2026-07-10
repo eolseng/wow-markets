@@ -25,6 +25,20 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>SUFeedURL</key>
+        <string>https://updates.wowmarkets.app/companion/stable/macos-arm64.xml</string>
+        <key>SUPublicEDKey</key>
+        <string>92xOZ5+HUUc84qIBQB1DhrGsUfx+f5/rWrMOEJ4xA18=</string>
+        <key>SURequireSignedFeed</key>
+        <true/>
+        <key>SUEnableAutomaticChecks</key>
+        <true/>
+        <key>SUAllowsAutomaticUpdates</key>
+        <true/>
+        <key>SUAutomaticallyUpdate</key>
+        <true/>
+        <key>SUScheduledCheckInterval</key>
+        <integer>21600</integer>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

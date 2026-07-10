@@ -35,6 +35,31 @@ export function heroAnnouncementSignature(view) {
   ])
 }
 
+export function deriveUpdaterView(updater = {}) {
+  const version = updater.available_version ? `Version ${updater.available_version}` : ""
+  switch (updater.status) {
+    case "checking":
+      return { label: "Checking", tone: "active", message: "Checking the signed update feed.", canCheck: false }
+    case "downloading":
+      return { label: "Downloading", tone: "active", message: version ? `${version} is downloading securely in the background.` : "Downloading securely in the background.", canCheck: false }
+    case "available":
+      return { label: updater.mandatory ? "Required" : "Available", tone: updater.mandatory ? "warning" : "active", message: `${version} is available.`, action: "Review update", canDefer: !updater.mandatory, canCheck: true }
+    case "ready":
+      return { label: updater.mandatory ? "Required" : "Ready", tone: updater.mandatory ? "warning" : "success", message: `${version} is verified and ready to install.`, action: "Install and restart", canDefer: !updater.mandatory, canCheck: true }
+    case "deferred":
+      return { label: "Later", tone: "warning", message: `${version} is deferred. Scans and uploads continue normally.`, action: "Review update", canCheck: true }
+    case "offline":
+      return { label: "Offline", tone: "warning", message: "Updates could not be checked. Scans and uploads continue normally.", canCheck: true }
+    case "error":
+      return { label: "Check failed", tone: "danger", message: updater.message || "Update verification failed.", canCheck: true }
+    case "disabled":
+      return { label: "Development", tone: "", message: updater.message || "Updates are enabled in official builds.", canCheck: false }
+    case "current":
+    default:
+      return { label: "Current", tone: "success", message: `Version ${updater.current_version || "—"} is up to date.`, canCheck: Boolean(updater.enabled) }
+  }
+}
+
 export function deriveView(snapshot, now = Date.now()) {
   if (!snapshot || snapshot.initializing) {
     return {

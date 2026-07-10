@@ -27,6 +27,7 @@ var wailsConfigJSON []byte
 var (
 	officialAPIURL           string
 	officialInstallationsURL string
+	officialUpdateOrigin     string
 )
 
 type serviceEndpoints struct {
@@ -75,11 +76,13 @@ func configuredServiceEndpoints() serviceEndpoints {
 type companionConfig struct {
 	// Email and InstallationName are retained so pre-1.0 config files continue
 	// to load. Account sessions are no longer part of the companion setup.
-	Email            string `json:"email,omitempty"`
-	InstallationName string `json:"installation_name,omitempty"`
-	ScanFilePath     string `json:"scan_file_path,omitempty"`
-	TokenPrefix      string `json:"token_prefix,omitempty"`
-	WowInstallPath   string `json:"wow_install_path,omitempty"`
+	Email                 string `json:"email,omitempty"`
+	InstallationName      string `json:"installation_name,omitempty"`
+	DeferredUpdateVersion string `json:"deferred_update_version,omitempty"`
+	ScanFilePath          string `json:"scan_file_path,omitempty"`
+	TokenPrefix           string `json:"token_prefix,omitempty"`
+	UpdateChannel         string `json:"update_channel,omitempty"`
+	WowInstallPath        string `json:"wow_install_path,omitempty"`
 }
 
 func loadConfig() (companionConfig, error) {
@@ -106,6 +109,11 @@ func loadConfig() (companionConfig, error) {
 	config.InstallationName = strings.TrimSpace(config.InstallationName)
 	config.ScanFilePath = strings.TrimSpace(config.ScanFilePath)
 	config.TokenPrefix = strings.TrimSpace(config.TokenPrefix)
+	config.DeferredUpdateVersion = strings.TrimSpace(config.DeferredUpdateVersion)
+	config.UpdateChannel = strings.ToLower(strings.TrimSpace(config.UpdateChannel))
+	if config.UpdateChannel == "" {
+		config.UpdateChannel = "stable"
+	}
 	config.WowInstallPath = strings.TrimSpace(config.WowInstallPath)
 	return config, nil
 }

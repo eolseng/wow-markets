@@ -18,8 +18,9 @@ import (
 const snapshotEventName = "companion:snapshot"
 
 type App struct {
-	mu      sync.Mutex
-	setupMu sync.Mutex
+	mu       sync.Mutex
+	setupMu  sync.Mutex
+	updateMu sync.Mutex
 
 	ctx              context.Context
 	apiURL           string
@@ -40,6 +41,12 @@ type App struct {
 
 	launchAtLogin          bool
 	launchAtLoginSupported bool
+
+	updateCancel     context.CancelFunc
+	updateDone       chan struct{}
+	nativeUpdater    platformUpdater
+	updater          UpdaterSnapshot
+	stagedUpdatePath string
 
 	setupMonitorCancel context.CancelFunc
 	setupMonitorDone   chan struct{}
@@ -75,6 +82,12 @@ func NewApp() *App {
 		windowShown:      !launchedInBackground(),
 		apiURL:           endpoints.APIURL,
 		installationsURL: endpoints.InstallationsURL,
+		updater: UpdaterSnapshot{
+			Channel:        string(defaultUpdateChannel),
+			CurrentVersion: companionVersion(),
+			Status:         updateStatusDisabled,
+			Message:        "Updates are enabled in official builds",
+		},
 	}
 }
 
@@ -109,6 +122,7 @@ func (app *App) shutdown(context.Context) {
 
 	app.stopSetupMonitor()
 	_ = app.stopWatcher()
+	app.stopUpdater()
 	stopStatusItem()
 }
 
@@ -156,6 +170,7 @@ func (app *App) Quit() {
 
 	app.stopSetupMonitor()
 	_ = app.stopWatcher()
+	app.stopUpdater()
 	stopStatusItem()
 	if ctx != nil {
 		runtime.Quit(ctx)
@@ -199,6 +214,7 @@ type Snapshot struct {
 	UploadedCount          int                    `json:"uploaded_count"`
 	UploadingCount         int                    `json:"uploading_count"`
 	UploadFailure          *ScanSummary           `json:"upload_failure,omitempty"`
+	Updater                UpdaterSnapshot        `json:"updater"`
 	Version                string                 `json:"version"`
 	WowDetected            bool                   `json:"wow_detected"`
 	WowInstallPath         string                 `json:"wow_install_path"`
@@ -282,6 +298,7 @@ func (app *App) initialize() {
 	app.setupMu.Lock()
 	_, _ = app.startWatcher()
 	app.setupMu.Unlock()
+	app.startUpdater()
 }
 
 func (app *App) Snapshot() Snapshot {
@@ -866,6 +883,7 @@ func (app *App) snapshotLocked() Snapshot {
 		UploadedCount:          app.uploadedCount,
 		UploadingCount:         app.uploadingCount,
 		UploadFailure:          cloneScanSummary(app.uploadFailure),
+		Updater:                app.updater,
 		Version:                companionVersion(),
 		WowDetected:            app.wowDetected,
 		WowInstallPath:         app.config.WowInstallPath,

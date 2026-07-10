@@ -34,24 +34,11 @@ func DiscoverAnniversaryScanFiles(extraRoots ...string) ([]Candidate, error) {
 	roots = dedupeStrings(roots)
 	for _, root := range roots {
 		root = NormalizeInstallRoot(root)
-		matches, err := filepath.Glob(filepath.Join(
-			root,
-			anniversaryFolder,
-			"WTF",
-			"Account",
-			"*",
-			"SavedVariables",
-			"WowMarketScan.lua",
-		))
+		rootCandidates, err := discoverAnniversaryScanFilesInRoot(root)
 		if err != nil {
 			return nil, err
 		}
-		for _, match := range matches {
-			candidate, ok := validCandidate(match, root)
-			if ok {
-				candidates = append(candidates, candidate)
-			}
-		}
+		candidates = append(candidates, rootCandidates...)
 	}
 
 	sort.SliceStable(candidates, func(i, j int) bool {
@@ -60,6 +47,46 @@ func DiscoverAnniversaryScanFiles(extraRoots ...string) ([]Candidate, error) {
 		return left.After(right)
 	})
 	return dedupeCandidates(append(explicitCandidates, candidates...)), nil
+}
+
+// DiscoverAnniversaryScanFilesInRoot returns valid account SavedVariables
+// files from root only. It does not consult environment variables or standard
+// install locations.
+func DiscoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
+	root = NormalizeInstallRoot(root)
+	if err := validateDirectory(root, "World of Warcraft folder"); err != nil {
+		return nil, err
+	}
+	return discoverAnniversaryScanFilesInRoot(root)
+}
+
+func discoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
+	matches, err := filepath.Glob(filepath.Join(
+		root,
+		anniversaryFolder,
+		"WTF",
+		"Account",
+		"*",
+		"SavedVariables",
+		"WowMarketScan.lua",
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	candidates := make([]Candidate, 0, len(matches))
+	for _, match := range matches {
+		candidate, ok := validCandidate(match, root)
+		if ok {
+			candidates = append(candidates, candidate)
+		}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool {
+		left, _ := time.Parse(time.RFC3339, candidates[i].ModifiedAt)
+		right, _ := time.Parse(time.RFC3339, candidates[j].ModifiedAt)
+		return left.After(right)
+	})
+	return dedupeCandidates(candidates), nil
 }
 
 func NormalizeInstallRoot(path string) string {

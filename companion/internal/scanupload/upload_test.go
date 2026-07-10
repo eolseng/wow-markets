@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -320,6 +321,282 @@ func TestQueueSkipsTruncatedScan(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(agent.dataDir, "uploads.json")); !os.IsNotExist(err) {
 		t.Fatalf("uploads.json error = %v, want not exist", err)
+	}
+}
+
+func TestReadRecordsReturnsPersistedRecordsNewestFirst(t *testing.T) {
+	agent, firstArchivePath := newTestAgent(t, "http://127.0.0.1:1", "abc123")
+	now := time.Date(2026, 6, 13, 12, 0, 0, 0, time.UTC)
+	agent.now = func() time.Time { return now }
+	_, err := agent.Queue([]scanarchive.Record{{
+		Checksum:     "abc123",
+		ArchivePath:  firstArchivePath,
+		CapturedAt:   1781350243,
+		ImportedAt:   "2026-06-13T12:00:00Z",
+		Region:       "eu",
+		Realm:        "Spineshatter",
+		Market:       "eu-spineshatter-alliance",
+		Faction:      "Alliance",
+		AuctionHouse: "faction",
+		ScannerName:  "Examplechar",
+		ScannerRealm: "Spineshatter",
+		RowCount:     200,
+		ItemCount:    25,
+	}})
+	if err != nil {
+		t.Fatalf("Queue() error = %v", err)
+	}
+
+	secondArchivePath := filepath.Join(agent.dataDir, "def456.json.gz")
+	if err := os.WriteFile(secondArchivePath, []byte("archive bytes"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	now = now.Add(time.Minute)
+	_, err = agent.Queue([]scanarchive.Record{{
+		Checksum:    "def456",
+		ArchivePath: secondArchivePath,
+	}})
+	if err != nil {
+		t.Fatalf("Queue() second error = %v", err)
+	}
+
+	records, err := ReadRecords(agent.dataDir)
+	if err != nil {
+		t.Fatalf("ReadRecords() error = %v", err)
+	}
+	if len(records) != 2 || records[0].Checksum != "def456" || records[1].Checksum != "abc123" {
+		t.Fatalf("ReadRecords() = %#v", records)
+	}
+	first := records[1]
+	if first.CapturedAt != 1781350243 ||
+		first.ArchiveRows != 200 ||
+		first.ArchiveItems != 25 ||
+		first.Realm != "Spineshatter" ||
+		first.ScannerName != "Examplechar" {
+		t.Fatalf("persisted archive metadata = %#v", first)
+	}
+
+	agentRecords, err := agent.Records()
+	if err != nil {
+		t.Fatalf("Records() error = %v", err)
+	}
+	if len(agentRecords) != 2 || agentRecords[0].Checksum != "def456" {
+		t.Fatalf("Records() = %#v", agentRecords)
+	}
+}
+
+func TestReadRecordsDoesNotCreateState(t *testing.T) {
+	dataDir := t.TempDir()
+	records, err := ReadRecords(dataDir)
+	if err != nil {
+		t.Fatalf("ReadRecords() error = %v", err)
+	}
+	if len(records) != 0 {
+		t.Fatalf("ReadRecords() = %#v", records)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "uploads.json")); !os.IsNotExist(err) {
+		t.Fatalf("uploads.json error = %v, want not exist", err)
+	}
+}
+
+func TestProcessDueWithProgressPersistsUploadingBeforeRequest(t *testing.T) {
+	var requestReceived atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(
+		writer http.ResponseWriter,
+		_ *http.Request,
+	) {
+		requestReceived.Store(true)
+		writer.WriteHeader(http.StatusCreated)
+		_, _ = writer.Write([]byte(`{
+			"checksum":"abc123",
+			"scan_id":1,
+			"submission_id":"submission-1",
+			"status":"accepted",
+			"rows":200,
+			"items":25,
+			"price_snapshots":20
+		}`))
+	}))
+	defer server.Close()
+
+	agent, archivePath := newTestAgent(t, server.URL, "abc123")
+	_, err := agent.Queue([]scanarchive.Record{{
+		Checksum:    "abc123",
+		ArchivePath: archivePath,
+		CapturedAt:  1781350243,
+		RowCount:    200,
+		ItemCount:   25,
+	}})
+	if err != nil {
+		t.Fatalf("Queue() error = %v", err)
+	}
+
+	progressCalls := 0
+	results, err := agent.ProcessDueWithProgress(
+		context.Background(),
+		func(record Record) {
+			progressCalls++
+			if requestReceived.Load() {
+				t.Fatal("progress callback ran after the HTTP request")
+			}
+			if record.Status != StatusUploading ||
+				record.Attempts != 1 ||
+				record.ArchiveRows != 200 ||
+				record.ArchiveItems != 25 {
+				t.Fatalf("progress record = %#v", record)
+			}
+			persisted, readErr := agent.Records()
+			if readErr != nil {
+				t.Fatalf("Records() in progress callback error = %v", readErr)
+			}
+			if len(persisted) != 1 || persisted[0].Status != StatusUploading {
+				t.Fatalf("persisted records in callback = %#v", persisted)
+			}
+		},
+	)
+	if err != nil {
+		t.Fatalf("ProcessDueWithProgress() error = %v", err)
+	}
+	if progressCalls != 1 || !requestReceived.Load() {
+		t.Fatalf("progressCalls = %d, requestReceived = %t", progressCalls, requestReceived.Load())
+	}
+	if len(results) != 1 || results[0].Record.Status != StatusUploaded {
+		t.Fatalf("results = %#v", results)
+	}
+}
+
+func TestResetFailedAuthorizationRequeuesRejectedUpload(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(
+		writer http.ResponseWriter,
+		_ *http.Request,
+	) {
+		attempts++
+		if attempts == 1 {
+			writer.WriteHeader(http.StatusUnauthorized)
+			_, _ = writer.Write([]byte(`{"error":"invalid_installation_token"}`))
+			return
+		}
+		writer.WriteHeader(http.StatusCreated)
+		_, _ = writer.Write([]byte(`{
+			"checksum":"abc123",
+			"scan_id":1,
+			"submission_id":"submission-1",
+			"status":"accepted",
+			"rows":200,
+			"items":25,
+			"price_snapshots":20
+		}`))
+	}))
+	defer server.Close()
+
+	agent, archivePath := newTestAgent(t, server.URL, "abc123")
+	_, err := agent.Queue([]scanarchive.Record{{
+		Checksum:    "abc123",
+		ArchivePath: archivePath,
+	}})
+	if err != nil {
+		t.Fatalf("Queue() error = %v", err)
+	}
+	first, err := agent.ProcessDue(context.Background())
+	if err != nil {
+		t.Fatalf("ProcessDue() error = %v", err)
+	}
+	if len(first) != 1 ||
+		first[0].Record.Status != StatusFailed ||
+		first[0].Record.Retryable ||
+		first[0].Record.HTTPStatus != http.StatusUnauthorized {
+		t.Fatalf("first result = %#v", first)
+	}
+	failedRecords, err := ReadRecords(agent.dataDir)
+	if err != nil {
+		t.Fatalf("ReadRecords() failed-state error = %v", err)
+	}
+	if len(failedRecords) != 1 ||
+		failedRecords[0].Status != StatusFailed ||
+		failedRecords[0].HTTPStatus != http.StatusUnauthorized {
+		t.Fatalf("failed records = %#v", failedRecords)
+	}
+
+	reset, err := ResetFailedAuthorization(agent.dataDir)
+	if err != nil {
+		t.Fatalf("ResetFailedAuthorization() error = %v", err)
+	}
+	if reset != 1 {
+		t.Fatalf("ResetFailedAuthorization() = %d, want 1", reset)
+	}
+	records, err := ReadRecords(agent.dataDir)
+	if err != nil {
+		t.Fatalf("ReadRecords() error = %v", err)
+	}
+	if len(records) != 1 ||
+		records[0].Status != StatusPending ||
+		records[0].HTTPStatus != 0 ||
+		records[0].LastError != "" {
+		t.Fatalf("reset record = %#v", records)
+	}
+
+	second, err := agent.ProcessDue(context.Background())
+	if err != nil {
+		t.Fatalf("ProcessDue() after reset error = %v", err)
+	}
+	if len(second) != 1 || second[0].Record.Status != StatusUploaded {
+		t.Fatalf("second result = %#v", second)
+	}
+}
+
+func TestResetFailedAuthorizationLeavesOtherFailuresUntouched(t *testing.T) {
+	dataDir := t.TempDir()
+	err := writeState(dataDir, state{
+		Version: stateVersion,
+		Uploads: map[string]Record{
+			"unauthorized": {
+				Checksum:   "unauthorized",
+				Status:     StatusFailed,
+				HTTPStatus: http.StatusUnauthorized,
+				LastError:  "API returned 401 invalid_installation_token",
+			},
+			"legacy-forbidden": {
+				Checksum:  "legacy-forbidden",
+				Status:    StatusFailed,
+				LastError: "API returned 403 installation_disabled",
+			},
+			"invalid-scan": {
+				Checksum:   "invalid-scan",
+				Status:     StatusFailed,
+				HTTPStatus: http.StatusUnprocessableEntity,
+				LastError:  "API returned 422 invalid_scan: bad row",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("writeState() error = %v", err)
+	}
+
+	reset, err := ResetFailedAuthorization(dataDir)
+	if err != nil {
+		t.Fatalf("ResetFailedAuthorization() error = %v", err)
+	}
+	if reset != 2 {
+		t.Fatalf("ResetFailedAuthorization() = %d, want 2", reset)
+	}
+	records, err := ReadRecords(dataDir)
+	if err != nil {
+		t.Fatalf("ReadRecords() error = %v", err)
+	}
+	byChecksum := make(map[string]Record, len(records))
+	for _, record := range records {
+		byChecksum[record.Checksum] = record
+	}
+	if byChecksum["unauthorized"].Status != StatusPending ||
+		byChecksum["legacy-forbidden"].Status != StatusPending {
+		t.Fatalf("authorization records = %#v", byChecksum)
+	}
+	invalid := byChecksum["invalid-scan"]
+	if invalid.Status != StatusFailed ||
+		invalid.HTTPStatus != http.StatusUnprocessableEntity ||
+		invalid.LastError == "" {
+		t.Fatalf("invalid scan record = %#v", invalid)
 	}
 }
 

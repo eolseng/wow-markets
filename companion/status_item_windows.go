@@ -34,16 +34,16 @@ func activateVisibleWindow() {}
 func onWindowsStatusItemReady(app *App) {
 	systray.SetIcon(trayIcon)
 	systray.SetTitle("WMS")
-	systray.SetTooltip("Wow Market Scan is running")
+	systray.SetTooltip("WoW Markets Companion is running")
 
-	status := systray.AddMenuItem("Status: Running", "Wow Market Scan is running")
+	status := systray.AddMenuItem("Status: Running", "WoW Markets Companion is running")
 	status.Disable()
 	systray.AddSeparator()
 
-	show := systray.AddMenuItem("Show Window", "Open the Wow Market Scan window")
-	hide := systray.AddMenuItem("Hide Window", "Keep Wow Market Scan running in the background")
+	show := systray.AddMenuItem("Show Window", "Open WoW Markets Companion")
+	hide := systray.AddMenuItem("Hide Window", "Keep WoW Markets Companion running in the background")
 	systray.AddSeparator()
-	quit := systray.AddMenuItem("Quit Wow Market Scan", "Stop Wow Market Scan")
+	quit := systray.AddMenuItem("Quit WoW Markets Companion", "Stop WoW Markets Companion")
 
 	go func() {
 		for {

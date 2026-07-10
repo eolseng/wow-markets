@@ -1,90 +1,71 @@
+import {
+  accountListSignature,
+  deriveView,
+  heroAnnouncementSignature,
+} from "./view-model.mjs"
+
 const state = {
   busy: false,
+  accountsSignature: "",
+  heroSignature: "",
+  page: "overview",
+  replaceTokenOpen: false,
   snapshot: null,
-  view: "overview",
 }
 
 const $ = (selector) => document.querySelector(selector)
+const $$ = (selector) => [...document.querySelectorAll(selector)]
 
 const elements = {
-  accountActions: $("#account-actions"),
-  accountEmail: $("#account-email"),
-  accountLoginButton: $("#account-login-button"),
-  accountLoginEmail: $("#account-login-email"),
-  accountLoginForm: $("#account-login-form"),
-  accountLoginPassword: $("#account-login-password"),
-  accountName: $("#account-name"),
-  accountPageStatus: $("#account-page-status"),
-  accountStatus: $("#account-status"),
-  accountStepDot: $("#account-step-dot"),
-  accountStepText: $("#account-step-text"),
-  accountSummary: $("#account-summary"),
-  archivedCount: $("#archived-count"),
-  candidateCount: $("#candidate-count"),
-  candidateList: $("#candidate-list"),
-  discoverButton: $("#discover-button"),
-  enrollButton: $("#enroll-button"),
-  enrollForm: $("#enroll-form"),
-  enrolledName: $("#enrolled-name"),
+  accountList: $("#account-list"),
+  addonPath: $("#expected-addon-path"),
+  appVersion: $("#app-version"),
+  backgroundNote: $("#background-note"),
+  dashboard: $("#dashboard"),
   failedCount: $("#failed-count"),
-  flowCard: $("#flow-card"),
-  flowKicker: $("#flow-kicker"),
-  flowSummary: $("#flow-summary"),
-  flowTitle: $("#flow-title"),
-  installationActions: $("#installation-actions"),
-  installationBlocked: $("#installation-blocked"),
-  installationEnrollButton: $("#installation-enroll-button"),
-  installationEnrollForm: $("#installation-enroll-form"),
-  installationName: $("#installation-name"),
-  installationPageName: $("#installation-page-name"),
-  installationPageStatus: $("#installation-page-status"),
-  installationStatus: $("#enrollment-status"),
-  installationStepDot: $("#installation-step-dot"),
-  installationStepText: $("#installation-step-text"),
-  installationSummary: $("#installation-summary"),
-  lastArchive: $("#last-archive"),
-  lastError: $("#last-error"),
-  lastEvent: $("#last-event"),
-  lastUpload: $("#last-upload"),
-  loginButton: $("#login-button"),
-  loginEmail: $("#login-email"),
-  loginForm: $("#login-form"),
-  loginPassword: $("#login-password"),
-  queuedCount: $("#queued-count"),
-  readyFlow: $("#ready-flow"),
-  readySummary: $("#ready-summary"),
-  removeEnrollmentButton: $("#remove-enrollment-button"),
+  heroCard: $("#hero-card"),
+  heroEyebrow: $("#hero-eyebrow"),
+  heroFacts: $("#hero-facts"),
+  heroSummary: $("#hero-summary"),
+  heroSymbol: $("#hero-symbol"),
+  heroTitle: $("#hero-title"),
+  launchAtLoginSection: $("#launch-at-login-section"),
+  launchAtLoginToggle: $("#launch-at-login-toggle"),
+  lastUploadContent: $("#last-upload-content"),
+  lastUploadStatus: $("#last-upload-status"),
+  notice: $("#notice"),
+  overviewContent: $("#overview-content"),
+  overviewPage: $("#overview-page"),
+  recentList: $("#recent-list"),
+  removeTokenButton: $("#remove-token-button"),
+  replaceTokenButton: $("#replace-token-button"),
   runtimeDot: $("#runtime-dot"),
   runtimeLabel: $("#runtime-label"),
-  scanDetail: $("#scan-detail"),
-  scanDiscoverButton: $("#scan-discover-button"),
-  scanFlow: $("#scan-flow"),
-  scanHelp: $("#scan-help"),
-  scanPageStatus: $("#scan-page-status"),
-  scanSelectWowFolderButton: $("#scan-select-wow-folder-button"),
-  scanStatus: $("#scan-status"),
-  scanStepDot: $("#scan-step-dot"),
-  scanStepText: $("#scan-step-text"),
-  scanSummary: $("#scan-summary"),
-  selectWowFolderButton: $("#select-wow-folder-button"),
-  selectedAccount: $("#selected-account"),
-  signoutButton: $("#signout-button"),
-  startButton: $("#start-button"),
-  statusOrb: $("#status-orb"),
-  stopButton: $("#stop-button"),
-  tokenPrefix: $("#token-prefix"),
+  settingsAccount: $("#settings-account"),
+  settingsAddonState: $("#settings-addon-state"),
+  settingsButton: $("#settings-button"),
+  settingsDataDir: $("#settings-data-dir"),
+  settingsPage: $("#settings-page"),
+  settingsScanState: $("#settings-scan-state"),
+  settingsTokenDetail: $("#settings-token-detail"),
+  settingsTokenForm: $("#settings-token-form"),
+  settingsTokenInput: $("#settings-token-input"),
+  settingsTokenStatus: $("#settings-token-status"),
+  settingsWatcherState: $("#settings-watcher-state"),
+  settingsWowPath: $("#settings-wow-path"),
+  settingsWowStatus: $("#settings-wow-status"),
+  setupCard: $("#setup-card"),
+  startingCard: $("#starting-card"),
+  startingPhase: $("#starting-phase"),
+  tokenForm: $("#token-form"),
+  tokenInput: $("#token-input"),
   uploadedCount: $("#uploaded-count"),
-  uploadsPageFailed: $("#uploads-page-failed"),
-  uploadsPageQueued: $("#uploads-page-queued"),
-  uploadsPageUploaded: $("#uploads-page-uploaded"),
-  viewSelect: $("#view-select"),
-  watcherState: $("#watcher-state"),
-  wowFolder: $("#wow-folder"),
+  waitingCount: $("#waiting-count"),
 }
 
 function backend() {
   const app = window.go?.main?.App
-  if (!app) throw new Error("Wails backend is not ready")
+  if (!app) throw new Error("WoW Markets Companion is still starting")
   return app
 }
 
@@ -93,246 +74,299 @@ async function refresh() {
   try {
     render(await backend().Snapshot())
   } catch (error) {
-    renderError(error)
+    if (state.snapshot) showError(error)
   }
 }
 
 function render(snapshot) {
   state.snapshot = snapshot
-  renderPages()
-  renderRuntime(snapshot)
-  renderFlow(snapshot)
-  renderAccount(snapshot)
-  renderInstallation(snapshot)
-  renderScan(snapshot)
-  renderUploads(snapshot)
+  const view = deriveView(snapshot)
+  renderPage()
+  renderRuntime(snapshot, view)
+  renderOverview(snapshot, view)
+  renderSettings(snapshot)
 }
 
-function renderPages() {
-  elements.viewSelect.value = state.view
-  for (const page of document.querySelectorAll("[data-page]")) {
-    page.hidden = page.dataset.page !== state.view
-  }
+function renderPage() {
+  elements.overviewPage.hidden = state.page !== "overview"
+  elements.settingsPage.hidden = state.page !== "settings"
+  elements.settingsButton.disabled = !state.snapshot || state.snapshot.initializing
 }
 
-function renderRuntime(snapshot) {
-  const hasError = Boolean(snapshot.last_error)
-  const ready = Boolean(snapshot.ready)
-  elements.runtimeLabel.textContent = hasError
-    ? "Needs attention"
-    : ready && snapshot.running
-      ? "Running"
-      : ready
-        ? "Ready"
-        : "Setup needed"
-  elements.runtimeDot.classList.toggle("running", ready && !hasError)
-  elements.runtimeDot.classList.toggle("error", hasError)
-}
-
-function renderFlow(snapshot) {
-  setStep(elements.accountStepDot, snapshot.logged_in)
-  elements.accountStepText.textContent = snapshot.logged_in
-    ? userLabel(snapshot)
-    : "Sign in"
-
-  setStep(elements.installationStepDot, snapshot.enrolled)
-  elements.installationStepText.textContent = snapshot.enrolled
-    ? snapshot.installation_name || "Enrolled"
-    : "Enroll device"
-
-  setStep(elements.scanStepDot, Boolean(snapshot.scan_file_path))
-  elements.scanStepText.textContent = snapshot.scan_file_path
-    ? scanLabel(snapshot)
-    : "Find folder"
-
-  elements.flowCard.className = `hero-card step-${snapshot.current_step || "login"}`
-  elements.statusOrb.className = `status-orb step-${snapshot.current_step || "login"}`
-
-  const copy = flowCopy(snapshot)
-  elements.flowKicker.textContent = copy.kicker
-  elements.flowTitle.textContent = copy.title
-  elements.flowSummary.textContent = copy.summary
-
-  elements.loginForm.hidden = snapshot.current_step !== "login"
-  elements.enrollForm.hidden = snapshot.current_step !== "enrollment"
-  elements.scanFlow.hidden = snapshot.current_step !== "scan"
-  elements.readyFlow.hidden = snapshot.current_step !== "ready"
-
-  setInputIfUntouched(elements.loginEmail, snapshot.email || "")
-  setInputIfUntouched(elements.installationName, snapshot.installation_name || "")
-  elements.loginButton.disabled = state.busy
-  elements.enrollButton.disabled = state.busy || !snapshot.logged_in
-  elements.discoverButton.disabled = state.busy
-  elements.selectWowFolderButton.disabled = state.busy
-
-  elements.uploadedCount.textContent = String(snapshot.uploaded_count || 0)
-  elements.queuedCount.textContent = String(snapshot.queued_count || 0)
-  elements.failedCount.textContent = String(snapshot.failed_count || 0)
-  elements.readySummary.textContent = snapshot.running
-    ? "The watcher is running in the background."
-    : "Everything is configured. Start the watcher from Uploads if needed."
-}
-
-function renderAccount(snapshot) {
-  const loggedIn = Boolean(snapshot.logged_in)
-  elements.accountStatus.textContent = loggedIn ? "Signed in" : "Not signed in"
-  elements.accountPageStatus.textContent = elements.accountStatus.textContent
-  elements.accountStatus.classList.toggle("ok", loggedIn)
-  elements.accountPageStatus.classList.toggle("ok", loggedIn)
-  elements.accountSummary.hidden = !loggedIn
-  elements.accountActions.hidden = !loggedIn
-  elements.accountLoginForm.hidden = loggedIn
-  elements.accountName.textContent = snapshot.user_display_name || "Signed in"
-  elements.accountEmail.textContent = snapshot.email || ""
-  setInputIfUntouched(elements.accountLoginEmail, snapshot.email || "")
-  elements.accountLoginButton.disabled = state.busy
-  elements.signoutButton.disabled = state.busy || !loggedIn
-}
-
-function renderInstallation(snapshot) {
-  const loggedIn = Boolean(snapshot.logged_in)
-  const enrolled = Boolean(snapshot.enrolled)
-  elements.installationStatus.textContent = enrolled ? "Enrolled" : "Not enrolled"
-  elements.installationPageStatus.textContent = elements.installationStatus.textContent
-  elements.installationStatus.classList.toggle("ok", enrolled)
-  elements.installationPageStatus.classList.toggle("ok", enrolled)
-  elements.installationEnrollForm.hidden = !loggedIn || enrolled
-  elements.installationSummary.hidden = !enrolled
-  elements.installationActions.hidden = !enrolled
-  elements.installationBlocked.hidden = loggedIn || enrolled
-  elements.enrolledName.textContent = snapshot.installation_name || "This device"
-  elements.tokenPrefix.textContent = snapshot.token_prefix
-    ? `Token ${snapshot.token_prefix}`
-    : "Token stored"
-  setInputIfUntouched(elements.installationPageName, snapshot.installation_name || "")
-  elements.installationEnrollButton.disabled = state.busy || !loggedIn || enrolled
-  elements.removeEnrollmentButton.disabled = state.busy || !enrolled
-}
-
-function renderScan(snapshot) {
-  const scanConfigured = Boolean(snapshot.scan_file_path)
-  elements.scanStatus.textContent = scanConfigured ? "Detected" : "Not detected"
-  elements.scanPageStatus.textContent = elements.scanStatus.textContent
-  elements.scanStatus.classList.toggle("ok", scanConfigured)
-  elements.scanPageStatus.classList.toggle("ok", scanConfigured)
-  elements.scanSummary.textContent = scanConfigured
-    ? `${snapshot.scan_file_count || 1} account scan file${(snapshot.scan_file_count || 1) === 1 ? "" : "s"} found`
-    : "No scan files found yet"
-  elements.scanDetail.textContent = scanConfigured
-    ? scanLabel(snapshot)
-    : "Select the World of Warcraft installation folder to scan all Anniversary accounts."
-  elements.wowFolder.textContent = snapshot.wow_install_path || "Not selected"
-  elements.selectedAccount.textContent = snapshot.selected_account || "None"
-  elements.scanDiscoverButton.disabled = state.busy
-  elements.scanSelectWowFolderButton.disabled = state.busy
-  renderCandidates(snapshot.discoveries || [], snapshot.scan_file_path)
-}
-
-function renderUploads(snapshot) {
-  elements.uploadsPageUploaded.textContent = String(snapshot.uploaded_count || 0)
-  elements.archivedCount.textContent = String(snapshot.archived_count || 0)
-  elements.uploadsPageQueued.textContent = String(snapshot.queued_count || 0)
-  elements.uploadsPageFailed.textContent = String(snapshot.failed_count || 0)
-  elements.watcherState.textContent = snapshot.running ? "Running" : "Stopped"
-  elements.watcherState.classList.toggle("ok", Boolean(snapshot.running))
-  elements.lastUpload.textContent = formatTime(snapshot.last_upload_at)
-  elements.lastArchive.textContent = formatTime(snapshot.last_archive_at)
-  elements.lastEvent.textContent = eventText(snapshot)
-  elements.lastError.textContent = snapshot.last_error || "None"
-  elements.startButton.disabled = state.busy || snapshot.running || !snapshot.configured
-  elements.stopButton.disabled = state.busy || !snapshot.running
-}
-
-function renderCandidates(candidates, selectedPath) {
-  elements.candidateList.replaceChildren()
-  elements.candidateCount.textContent = `${candidates.length} found`
-  if (candidates.length === 0) {
-    const empty = document.createElement("p")
-    empty.className = "muted"
-    empty.textContent = "No Anniversary account SavedVariables files detected."
-    elements.candidateList.append(empty)
+function renderRuntime(snapshot, view) {
+  elements.runtimeDot.className = "runtime-dot"
+  if (snapshot.initializing) {
+    elements.runtimeLabel.textContent = "Starting"
+    elements.runtimeDot.classList.add("loading")
     return
   }
+  if (view.tone === "danger") {
+    elements.runtimeLabel.textContent = "Needs attention"
+    elements.runtimeDot.classList.add("error")
+    return
+  }
+  if (view.mode === "retrying" || view.setupStep === "addon") {
+    elements.runtimeLabel.textContent = view.mode === "retrying" ? "Retrying" : "Setup needed"
+    elements.runtimeDot.classList.add("warning")
+    return
+  }
+  if (snapshot.ready && snapshot.running) {
+    elements.runtimeLabel.textContent = "Running"
+    elements.runtimeDot.classList.add("active")
+    return
+  }
+  elements.runtimeLabel.textContent = snapshot.ready ? "Starting watcher" : "Setup needed"
+  elements.runtimeDot.classList.add("loading")
+}
+
+function renderOverview(snapshot, view) {
+  const starting = view.mode === "starting"
+  elements.startingCard.hidden = !starting
+  elements.overviewContent.hidden = starting
+  if (starting) {
+    elements.startingPhase.textContent = view.summary
+    return
+  }
+
+  const signature = heroAnnouncementSignature(view)
+  if (signature !== state.heroSignature) {
+    state.heroSignature = signature
+    elements.heroCard.className = `hero-card tone-${view.tone}`
+    elements.heroSymbol.className = `hero-symbol ${symbolClass(view)}`
+    elements.heroEyebrow.textContent = view.eyebrow
+    elements.heroTitle.textContent = view.title
+    elements.heroSummary.textContent = view.summary
+    renderFacts(elements.heroFacts, view.scan)
+  }
+
+  const setup = view.mode === "setup"
+  elements.setupCard.hidden = !setup
+  elements.dashboard.hidden = setup
+  elements.backgroundNote.textContent = setup
+    ? "Setup is saved as you go. You can return to it at any time."
+    : "The companion keeps watching when you close this window."
+  if (setup) renderSetup(snapshot, view.setupStep)
+  else renderDashboard(snapshot)
+}
+
+function symbolClass(view) {
+  if (view.tone === "danger") return "danger"
+  if (view.tone === "warning") return "warning"
+  if (["uploaded", "waiting"].includes(view.mode)) return "success"
+  return "active"
+}
+
+function renderSetup(snapshot, currentStep) {
+  const checks = [
+    ["token", snapshot.token_stored, snapshot.token_prefix ? `Stored · ${snapshot.token_prefix}…` : "Required"],
+    ["wow", snapshot.wow_detected, snapshot.wow_detected ? basename(snapshot.wow_install_path) : "Required"],
+    ["addon", snapshot.addon_detected, snapshot.addon_detected ? "Installed" : "Required"],
+    ["saved-variables", snapshot.saved_variables_detected, snapshot.saved_variables_detected ? `${snapshot.scan_file_count || 1} found` : "Required"],
+  ]
+  for (const [name, complete, detail] of checks) {
+    const check = $(`#check-${name}`)
+    check.classList.toggle("complete", complete)
+    const normalized = name === "saved-variables" ? "saved_variables" : name
+    check.classList.toggle("current", normalized === currentStep)
+    check.querySelector("small").textContent = detail
+  }
+  for (const panel of $$('[data-setup-panel]')) {
+    panel.hidden = panel.dataset.setupPanel !== currentStep
+  }
+  elements.addonPath.textContent = snapshot.addon_path || "Select your World of Warcraft folder first"
+}
+
+function renderDashboard(snapshot) {
+  elements.uploadedCount.textContent = formatNumber(snapshot.uploaded_count)
+  elements.waitingCount.textContent = formatNumber((snapshot.queued_count || 0) + (snapshot.uploading_count || 0))
+  elements.failedCount.textContent = formatNumber(snapshot.failed_count)
+
+  const lastUpload = snapshot.last_upload
+  if (!lastUpload) {
+    elements.lastUploadStatus.textContent = "Waiting"
+    elements.lastUploadStatus.className = "status-badge active"
+    elements.lastUploadContent.innerHTML = `<div class="empty-state"><strong>No uploads yet</strong><span>Run an Auctionator full scan, then /reload or log out.</span></div>`
+  } else {
+    elements.lastUploadStatus.textContent = uploadStatusLabel(lastUpload)
+    elements.lastUploadStatus.className = `status-badge ${uploadTone(lastUpload)}`
+    elements.lastUploadContent.innerHTML = summaryMarkup(lastUpload)
+  }
+
+  elements.recentList.replaceChildren()
+  const recent = snapshot.recent_uploads || []
+  if (recent.length === 0) {
+    const empty = document.createElement("div")
+    empty.className = "empty-state"
+    empty.innerHTML = "<strong>Waiting for your first scan</strong><span>New uploads will appear here.</span>"
+    elements.recentList.append(empty)
+    return
+  }
+  for (const upload of recent.slice(0, 5)) {
+    const row = document.createElement("div")
+    row.className = "recent-row"
+    const status = escapeHTML(upload.status || "pending")
+    row.innerHTML = `
+      <span class="recent-icon ${status}" aria-hidden="true"></span>
+      <div class="recent-copy">
+        <strong>${escapeHTML(scanLabel(upload))}</strong>
+        <span>${escapeHTML(scanMetrics(upload))}</span>
+      </div>
+      <time class="recent-time" datetime="${escapeHTML(activityTime(upload))}">${escapeHTML(relativeTime(activityTime(upload)))}</time>`
+    elements.recentList.append(row)
+  }
+}
+
+function renderFacts(container, scan) {
+  container.replaceChildren()
+  if (!scan) {
+    container.hidden = true
+    return
+  }
+  const facts = [
+    ["Market", marketLabel(scan)],
+    ["Captured", formatDateTime(scan.captured_at)],
+    ["Rows", formatNumber(scan.row_count)],
+    ["Items", formatNumber(scan.item_count)],
+  ].filter(([, value]) => value && value !== "—")
+  for (const [label, value] of facts) {
+    const item = document.createElement("span")
+    const small = document.createElement("small")
+    small.textContent = label
+    item.append(small, document.createTextNode(value))
+    container.append(item)
+  }
+  container.hidden = facts.length === 0
+}
+
+function renderSettings(snapshot) {
+  const tokenStored = Boolean(snapshot.token_stored)
+  elements.settingsTokenDetail.textContent = tokenStored
+    ? `${snapshot.token_prefix || "wms1_"}… stored securely`
+    : "No token stored"
+  setBadge(elements.settingsTokenStatus, tokenStored ? "Stored" : "Missing", tokenStored ? "success" : "warning")
+  elements.removeTokenButton.disabled = state.busy || !tokenStored
+  elements.replaceTokenButton.textContent = tokenStored ? "Replace" : "Add token"
+  elements.replaceTokenButton.setAttribute("aria-expanded", String(state.replaceTokenOpen))
+  elements.settingsTokenForm.hidden = !state.replaceTokenOpen
+
+  elements.settingsWowPath.textContent = snapshot.wow_install_path || "Not detected"
+  setBadge(elements.settingsWowStatus, snapshot.wow_detected ? "Detected" : "Missing", snapshot.wow_detected ? "success" : "warning")
+  elements.settingsAddonState.textContent = snapshot.addon_detected ? "Installed" : "Not found"
+  elements.settingsScanState.textContent = snapshot.saved_variables_detected
+    ? `${snapshot.scan_file_count || 1} SavedVariables file${(snapshot.scan_file_count || 1) === 1 ? "" : "s"}`
+    : "Waiting for scan data"
+  elements.settingsAccount.textContent = snapshot.selected_account || "—"
+  renderAccounts(snapshot.discoveries || [], snapshot.scan_file_path)
+
+  elements.launchAtLoginSection.hidden = !snapshot.launch_at_login_supported
+  elements.launchAtLoginToggle.checked = Boolean(snapshot.launch_at_login)
+  elements.launchAtLoginToggle.disabled = state.busy || !snapshot.launch_at_login_supported
+  elements.appVersion.textContent = `v${snapshot.version || "1.0.0"}`
+  elements.settingsDataDir.textContent = snapshot.data_dir || "—"
+  elements.settingsWatcherState.textContent = snapshot.running ? "Running in the background" : snapshot.ready ? "Starting" : "Waiting for setup"
+}
+
+function renderAccounts(candidates, selectedPath) {
+  const signature = accountListSignature(candidates, selectedPath)
+  if (signature === state.accountsSignature) return
+  state.accountsSignature = signature
+  elements.accountList.replaceChildren()
+  elements.accountList.hidden = candidates.length < 2
+  if (candidates.length < 2) return
   for (const candidate of candidates) {
     const button = document.createElement("button")
     button.type = "button"
-    button.className = "candidate"
+    button.className = `account-option${candidate.path === selectedPath ? " selected" : ""}`
     button.dataset.action = "true"
     button.disabled = state.busy
-    if (candidate.path === selectedPath) button.classList.add("selected")
-    const account = candidate.account || "Unknown account"
-    button.innerHTML = `<strong>${escapeHTML(account)}</strong><span>${escapeHTML(candidate.path)}</span><small>${formatTime(candidate.modified_at)}</small>`
+    const label = document.createElement("span")
+    label.textContent = candidate.account || "Unknown account"
+    const detail = document.createElement("small")
+    detail.textContent = candidate.path === selectedPath ? "Selected" : formatDateTime(candidate.modified_at)
+    button.append(label, detail)
     button.addEventListener("click", () => run(() => backend().SetScanFile(candidate.path)))
-    elements.candidateList.append(button)
+    elements.accountList.append(button)
   }
 }
 
-function flowCopy(snapshot) {
-  switch (snapshot.current_step) {
-    case "ready":
-      return {
-        kicker: "Ready",
-        title: snapshot.running ? "Uploading is active" : "Companion is ready",
-        summary: snapshot.running
-          ? "You can close the window. The menu bar icon will stay visible while uploads continue."
-          : "Everything is configured. The watcher can run from the Uploads page.",
-      }
-    case "enrollment":
-      return {
-        kicker: "Step 2 of 3",
-        title: "Enroll this installation",
-        summary: "Create an upload token for this device. The token will be stored in the OS credential store.",
-      }
-    case "scan":
-      return {
-        kicker: "Step 3 of 3",
-        title: "Find your WoW installation",
-        summary: "The companion will scan the Anniversary account folders and select the newest WowMarketScan file.",
-      }
-    case "login":
-    default:
-      return {
-        kicker: "Step 1 of 3",
-        title: "Sign in",
-        summary: "Use your Wow Market Scan account before enrolling this device.",
-      }
-  }
+function setBadge(element, text, tone) {
+  element.textContent = text
+  element.className = `status-badge ${tone}`
 }
 
-function setStep(dot, complete) {
-  dot.classList.toggle("complete", Boolean(complete))
+function summaryMarkup(scan) {
+  return `<div class="scan-summary">
+    <div class="scan-summary-main">
+      <strong>${escapeHTML(scanLabel(scan))}</strong>
+      <time datetime="${escapeHTML(scan.uploaded_at || scan.captured_at || "")}">${escapeHTML(relativeTime(scan.uploaded_at || scan.captured_at))}</time>
+    </div>
+    <div class="summary-metrics">
+      <span><small>Captured </small>${escapeHTML(formatDateTime(scan.captured_at))}</span>
+      <span><small>Rows </small>${escapeHTML(formatNumber(scan.row_count))}</span>
+      <span><small>Items </small>${escapeHTML(formatNumber(scan.item_count))}</span>
+      ${scan.scan_id ? `<span><small>Scan </small>#${escapeHTML(formatNumber(scan.scan_id))}</span>` : ""}
+    </div>
+  </div>`
 }
 
-function setInputIfUntouched(input, value) {
-  if (document.activeElement === input || input.dataset.touched === "true") return
-  input.value = value
+function scanLabel(scan) {
+  const character = [scan.scanner_name, scan.scanner_realm].filter(Boolean).join(" · ")
+  return character || marketLabel(scan) || "Auctionator scan"
 }
 
-function clearTouched(input) {
-  input.dataset.touched = "false"
+function marketLabel(scan) {
+  return [scan.realm, scan.market].filter(Boolean).join(" · ")
 }
 
-function userLabel(snapshot) {
-  if (snapshot.user_display_name) return snapshot.user_display_name
-  if (snapshot.email) return snapshot.email
-  return "Signed in"
+function scanMetrics(scan) {
+  const metrics = []
+  if (scan.row_count) metrics.push(`${formatNumber(scan.row_count)} rows`)
+  if (scan.item_count) metrics.push(`${formatNumber(scan.item_count)} items`)
+  metrics.push(uploadStatusLabel(scan))
+  return metrics.join(" · ")
 }
 
-function scanLabel(snapshot) {
-  if (snapshot.selected_account) return snapshot.selected_account
-  if (snapshot.scan_file_path) return basename(snapshot.scan_file_path)
-  return "Detected"
+function uploadStatusLabel(scan) {
+  if (scan.status === "uploaded") return scan.server_status === "duplicate" ? "Already uploaded" : "Uploaded"
+  if (scan.status === "uploading") return "Uploading"
+  if (scan.status === "failed") return scan.retryable ? "Retrying" : "Failed"
+  return "Waiting"
 }
 
-function eventText(snapshot) {
-  if (!snapshot.last_message && !snapshot.last_event_at) return "None"
-  if (!snapshot.last_event_at) return snapshot.last_message
-  return `${snapshot.last_message} (${formatTime(snapshot.last_event_at)})`
+function uploadTone(scan) {
+  if (scan.status === "uploaded") return "success"
+  if (scan.status === "failed") return scan.retryable ? "warning" : "danger"
+  return "active"
 }
 
-function formatTime(value) {
-  if (!value) return "None"
-  return new Date(value).toLocaleString()
+function activityTime(scan) {
+  return scan.uploaded_at || scan.last_attempt_at || scan.queued_at || scan.captured_at || ""
+}
+
+function formatDateTime(value) {
+  if (!value) return "—"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "—"
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+}
+
+function relativeTime(value) {
+  if (!value) return "—"
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return "—"
+  const seconds = Math.round((timestamp - Date.now()) / 1000)
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" })
+  if (Math.abs(seconds) < 60) return formatter.format(seconds, "second")
+  const minutes = Math.round(seconds / 60)
+  if (Math.abs(minutes) < 60) return formatter.format(minutes, "minute")
+  const hours = Math.round(minutes / 60)
+  if (Math.abs(hours) < 24) return formatter.format(hours, "hour")
+  return formatter.format(Math.round(hours / 24), "day")
+}
+
+function formatNumber(value) {
+  const number = Number(value || 0)
+  return Number.isFinite(number) ? number.toLocaleString() : "0"
 }
 
 function basename(path) {
@@ -340,142 +374,116 @@ function basename(path) {
 }
 
 function escapeHTML(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
 }
 
-function renderError(error) {
-  elements.runtimeLabel.textContent = "Needs attention"
-  elements.runtimeDot.classList.add("error")
-  elements.flowKicker.textContent = "Needs attention"
-  elements.flowTitle.textContent = "Action failed"
-  elements.flowSummary.textContent = error?.message || String(error)
+function showError(error) {
+  elements.notice.textContent = errorMessage(error)
+  elements.notice.hidden = false
 }
 
-async function run(action) {
-	state.busy = true
-	setBusy(true)
-	let succeeded = false
-	let failure = null
-	try {
-		const snapshot = await action()
-		render(snapshot)
-		succeeded = true
-	} catch (error) {
-		failure = error
-		renderError(error)
-	} finally {
-		state.busy = false
-		if (state.snapshot) {
-			render(state.snapshot)
-		}
-		if (!succeeded && failure) {
-			renderError(failure)
-		}
-		setBusy(false)
-	}
-	return succeeded
+function clearError() {
+  elements.notice.hidden = true
+  elements.notice.textContent = ""
+}
+
+function errorMessage(error) {
+  if (typeof error === "string") return error
+  return error?.message || String(error)
 }
 
 function setBusy(busy) {
-	document.body.classList.toggle("busy", busy)
-	if (!busy) return
-	for (const button of document.querySelectorAll("[data-action]")) {
-		button.disabled = true
-	}
+  state.busy = busy
+  for (const element of $$('[data-action]')) element.disabled = busy
+  if (state.snapshot) renderSettings(state.snapshot)
 }
 
-function submitLogin(emailInput, passwordInput) {
-  return run(() =>
-    backend().Login({
-      email: emailInput.value,
-      password: passwordInput.value,
-    }),
-  ).then((succeeded) => {
-    if (!succeeded) return
-    passwordInput.value = ""
-    clearTouched(passwordInput)
-    clearTouched(emailInput)
-  })
+async function run(action) {
+  if (state.busy) return
+  clearError()
+  setBusy(true)
+  try {
+    const result = await action()
+    if (result && typeof result === "object" && "initializing" in result) render(result)
+    else await refresh()
+  } catch (error) {
+    showError(error)
+    if (state.snapshot) render(state.snapshot)
+  } finally {
+    setBusy(false)
+  }
 }
 
-function submitEnrollment(nameInput) {
-  return run(() =>
-    backend().Enroll({
-      installation_name: nameInput.value,
-    }),
-  ).then((succeeded) => {
-    if (!succeeded) return
-    clearTouched(nameInput)
-  })
+function openPage(page) {
+  state.page = page
+  clearError()
+  renderPage()
 }
 
-for (const input of document.querySelectorAll("input")) {
-  input.dataset.touched = "false"
-  input.addEventListener("input", () => {
-    input.dataset.touched = "true"
-  })
-}
+elements.homeButton = $("#home-button")
+elements.homeButton.addEventListener("click", () => openPage("overview"))
+elements.settingsButton.addEventListener("click", () => openPage("settings"))
+$("#back-button").addEventListener("click", () => openPage("overview"))
 
-elements.viewSelect.addEventListener("change", () => {
-  state.view = elements.viewSelect.value
-  renderPages()
-})
-
-for (const button of document.querySelectorAll("[data-view-jump]")) {
-  button.addEventListener("click", () => {
-    state.view = button.dataset.viewJump
-    renderPages()
-  })
-}
-
-elements.loginForm.addEventListener("submit", (event) => {
+elements.tokenForm.addEventListener("submit", (event) => {
   event.preventDefault()
-  submitLogin(elements.loginEmail, elements.loginPassword)
+  const token = elements.tokenInput.value
+  run(async () => {
+    const snapshot = await backend().SetInstallationToken({ token })
+    elements.tokenForm.reset()
+    return snapshot
+  })
 })
 
-elements.accountLoginForm.addEventListener("submit", (event) => {
+elements.settingsTokenForm.addEventListener("submit", (event) => {
   event.preventDefault()
-  submitLogin(elements.accountLoginEmail, elements.accountLoginPassword)
+  const token = elements.settingsTokenInput.value
+  run(async () => {
+    const snapshot = await backend().SetInstallationToken({ token })
+    elements.settingsTokenForm.reset()
+    state.replaceTokenOpen = false
+    return snapshot
+  })
 })
 
-elements.enrollForm.addEventListener("submit", (event) => {
-  event.preventDefault()
-  submitEnrollment(elements.installationName)
+elements.replaceTokenButton.addEventListener("click", () => {
+  state.replaceTokenOpen = !state.replaceTokenOpen
+  if (state.snapshot) renderSettings(state.snapshot)
+  if (state.replaceTokenOpen) elements.settingsTokenInput.focus()
 })
 
-elements.installationEnrollForm.addEventListener("submit", (event) => {
-  event.preventDefault()
-  submitEnrollment(elements.installationPageName)
+elements.removeTokenButton.addEventListener("click", () => {
+  if (!window.confirm("Forget this installation token on this device? It will not be revoked on the website.")) return
+  run(() => backend().RemoveInstallationToken())
 })
 
-elements.signoutButton.addEventListener("click", () => run(() => backend().SignOut()))
-elements.removeEnrollmentButton.addEventListener("click", () =>
-  run(() => backend().RemoveEnrollment()),
-)
-elements.discoverButton.addEventListener("click", () =>
-  run(() => backend().DiscoverScanFiles()),
-)
-elements.scanDiscoverButton.addEventListener("click", () =>
-  run(() => backend().DiscoverScanFiles()),
-)
-elements.selectWowFolderButton.addEventListener("click", () =>
-  run(() => backend().SelectWowFolder()),
-)
-elements.scanSelectWowFolderButton.addEventListener("click", () =>
-  run(() => backend().SelectWowFolder()),
-)
-elements.startButton.addEventListener("click", () =>
-  run(() => backend().StartWatcher()),
-)
-elements.stopButton.addEventListener("click", () =>
-  run(() => backend().StopWatcher()),
-)
+for (const selector of ["#get-token-button", "#settings-open-token-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().OpenInstallationsPage()))
+}
+for (const selector of ["#auto-detect-button", "#settings-auto-detect-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().AutoDetectWowFolder()))
+}
+for (const selector of ["#choose-wow-button", "#settings-choose-wow-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().SelectWowFolder()))
+}
+for (const selector of ["#addon-check-button", "#scan-check-button", "#refresh-settings-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().RefreshSetup()))
+}
+
+elements.launchAtLoginToggle.addEventListener("change", () => {
+  const enabled = elements.launchAtLoginToggle.checked
+  run(() => backend().SetLaunchAtLogin(enabled))
+})
 
 window.addEventListener("DOMContentLoaded", () => {
-  refresh()
-  window.setInterval(refresh, 2000)
+  if (window.runtime?.EventsOn) {
+    window.runtime.EventsOn("companion:snapshot", (snapshot) => render(snapshot))
+  }
+  void refresh()
+  window.setInterval(refresh, 2500)
 })

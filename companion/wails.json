@@ -1,7 +1,7 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "wow-market-scan",
-  "outputfilename": "Wow Market Scan",
+  "name": "wow-markets-companion",
+  "outputfilename": "WoW Markets Companion",
   "frontend:dir": "frontend",
   "frontend:install": "",
   "frontend:build": "",
@@ -9,10 +9,10 @@
   "wailsjsdir": "frontend/wailsjs",
   "version": "2",
   "info": {
-    "companyName": "Wow Market Scan",
-    "productName": "Wow Market Scan",
-    "productVersion": "0.1.0",
-    "copyright": "Copyright 2026 Wow Market Scan",
-    "comments": "Desktop companion that uploads WoW Market Scan captures to the WoW Markets API."
+    "companyName": "WoW Markets",
+    "productName": "WoW Markets Companion",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright 2026 WoW Markets",
+    "comments": "Desktop companion that uploads WoW Markets addon captures to the WoW Markets API."
   }
 }

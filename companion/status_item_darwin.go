@@ -72,9 +72,9 @@ static void wmsCreateStatusItem(void) {
 		wmsStatusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
 		NSStatusBarButton *button = [wmsStatusItem button];
 		[button setImage:wmsCreateStatusIcon()];
-		[button setToolTip:@"Wow Market Scan is running"];
+		[button setToolTip:@"WoW Markets Companion is running"];
 
-		NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Wow Market Scan"];
+		NSMenu *menu = [[NSMenu alloc] initWithTitle:@"WoW Markets Companion"];
 		NSMenuItem *statusItem = [[NSMenuItem alloc] initWithTitle:@"Status: Running" action:nil keyEquivalent:@""];
 		[statusItem setEnabled:NO];
 		[menu addItem:statusItem];
@@ -89,7 +89,7 @@ static void wmsCreateStatusItem(void) {
 		[menu addItem:hideItem];
 		[menu addItem:[NSMenuItem separatorItem]];
 
-		NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit Wow Market Scan" action:@selector(quit:) keyEquivalent:@""];
+		NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit WoW Markets Companion" action:@selector(quit:) keyEquivalent:@""];
 		[quitItem setTarget:wmsStatusItemTarget];
 		[menu addItem:quitItem];
 

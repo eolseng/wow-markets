@@ -10,12 +10,16 @@ import (
 )
 
 const (
-	productionAPIURL = "https://api.wowmarkets.app"
-	configDirName    = "WowMarketScan"
-	configFileName   = "config.json"
+	productionAPIURL     = "https://api.wowmarkets.app"
+	installationsPageURL = "https://wowmarkets.app/account/installations"
+	configDirName        = "WowMarketScan"
+	configFileName       = "config.json"
+	companionVersion     = "1.0.0"
 )
 
 type companionConfig struct {
+	// Email and InstallationName are retained so pre-1.0 config files continue
+	// to load. Account sessions are no longer part of the companion setup.
 	Email            string `json:"email,omitempty"`
 	InstallationName string `json:"installation_name,omitempty"`
 	ScanFilePath     string `json:"scan_file_path,omitempty"`

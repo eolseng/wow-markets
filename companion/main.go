@@ -17,6 +17,7 @@ var assets embed.FS
 
 func main() {
 	app := NewApp()
+	startHidden := launchedInBackground()
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(signals)
@@ -28,21 +29,30 @@ func main() {
 	}()
 
 	err := wails.Run(&options.App{
-		Title:             "Wow Market Scan",
-		Width:             680,
-		Height:            460,
-		MinWidth:          500,
-		MinHeight:         300,
+		Title:             "WoW Markets Companion",
+		Width:             720,
+		Height:            560,
+		MinWidth:          620,
+		MinHeight:         480,
+		StartHidden:       startHidden,
 		HideWindowOnClose: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: options.NewRGB(23, 23, 23),
+		BackgroundColour: options.NewRGB(8, 13, 23),
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
 		OnBeforeClose:    app.beforeClose,
 		Bind: []interface{}{
 			app,
+		},
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "com.wowmarkets.companion",
+			OnSecondInstanceLaunch: func(data options.SecondInstanceData) {
+				if !hasBackgroundLaunchArgument(data.Args) {
+					app.ShowWindow()
+				}
+			},
 		},
 	})
 	if err != nil {

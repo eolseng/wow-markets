@@ -3,222 +3,197 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wow Market Scan</title>
+    <meta name="color-scheme" content="dark" />
+    <title>WoW Markets Companion</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./app.js"></script>
   </head>
   <body>
-    <main class="app">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Wow Market Scan</p>
-          <h1>Companion</h1>
-        </div>
-        <div class="top-actions">
-          <div class="runtime-state">
-            <span class="dot" id="runtime-dot"></span>
-            <span id="runtime-label">Loading</span>
-          </div>
-          <select id="view-select" aria-label="View">
-            <option value="overview">Overview</option>
-            <option value="settings">Settings</option>
-            <option value="uploads">Uploads</option>
-          </select>
+    <main class="app-shell">
+      <header class="app-header">
+        <button class="brand" id="home-button" type="button" aria-label="Open overview">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M5 18V9m5 9V5m5 13v-6m4 6V8" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <span class="brand-name">WoW Markets</span>
+            <span class="brand-product">Companion</span>
+          </span>
+        </button>
+        <div class="header-actions">
+          <span class="runtime-pill" id="runtime-pill">
+            <span class="runtime-dot" id="runtime-dot"></span>
+            <span id="runtime-label">Starting</span>
+          </span>
+          <button class="icon-button" id="settings-button" type="button" aria-label="Open settings" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.38.34.73.6 1 .3.3.7.43 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <section class="page" data-page="overview">
-        <section class="hero-card" id="flow-card">
-          <div class="status-orb" id="status-orb"></div>
-          <div class="hero-copy">
-            <span id="flow-kicker">Checking setup</span>
-            <h2 id="flow-title">Preparing companion</h2>
-            <p id="flow-summary">Loading current account, installation, and scan file status.</p>
-          </div>
+      <div class="notice" id="notice" role="alert" hidden></div>
+
+      <section class="page" id="overview-page">
+        <section class="starting-card" id="starting-card">
+          <span class="large-spinner" aria-hidden="true"></span>
+          <p class="kicker">Starting</p>
+          <h1>Checking your setup</h1>
+          <p id="starting-phase">Preparing WoW Markets Companion.</p>
+          <div class="skeleton-lines" aria-hidden="true"><i></i><i></i><i></i></div>
         </section>
 
-        <section class="steps" aria-label="Setup progress">
-          <button class="step" data-view-jump="settings" type="button">
-            <span class="step-dot" id="account-step-dot"></span>
-            <strong>Login</strong>
-            <small id="account-step-text">Required</small>
-          </button>
-          <button class="step" data-view-jump="settings" type="button">
-            <span class="step-dot" id="installation-step-dot"></span>
-            <strong>Enrollment</strong>
-            <small id="installation-step-text">Required</small>
-          </button>
-          <button class="step" data-view-jump="settings" type="button">
-            <span class="step-dot" id="scan-step-dot"></span>
-            <strong>Scan files</strong>
-            <small id="scan-step-text">Required</small>
-          </button>
-        </section>
+        <div class="overview-content" id="overview-content" hidden>
+          <section class="hero-card tone-active" id="hero-card" aria-atomic="true" aria-live="polite">
+            <span class="hero-symbol" id="hero-symbol" aria-hidden="true"></span>
+            <div class="hero-copy">
+              <p class="kicker" id="hero-eyebrow">Active</p>
+              <h1 id="hero-title">Watching for scans</h1>
+              <p id="hero-summary">Run an Auctionator scan whenever you like.</p>
+              <div class="scan-facts" id="hero-facts" hidden></div>
+            </div>
+          </section>
 
-        <section class="panel action-panel" id="current-action-panel">
-          <form id="login-form" class="flow-form">
-            <div class="panel-heading">
-              <h2>Sign In</h2>
-              <span class="badge" id="account-status">Not signed in</span>
+          <section class="setup-card" id="setup-card" hidden>
+            <div class="setup-progress" aria-label="Setup progress">
+              <div class="setup-check" id="check-token"><span>1</span><div><strong>Token</strong><small>Required</small></div></div>
+              <div class="setup-check" id="check-wow"><span>2</span><div><strong>WoW folder</strong><small>Required</small></div></div>
+              <div class="setup-check" id="check-addon"><span>3</span><div><strong>Addon</strong><small>Required</small></div></div>
+              <div class="setup-check" id="check-saved-variables"><span>4</span><div><strong>Scan data</strong><small>Required</small></div></div>
             </div>
-            <label>
-              <span>Email</span>
-              <input autocomplete="email" id="login-email" name="email" type="email" required />
-            </label>
-            <label>
-              <span>Password</span>
-              <input autocomplete="current-password" id="login-password" name="password" type="password" required />
-            </label>
-            <button data-action id="login-button" type="submit">Sign in</button>
-          </form>
 
-          <form id="enroll-form" class="flow-form" hidden>
-            <div class="panel-heading">
-              <h2>Enroll Installation</h2>
-              <span class="badge" id="enrollment-status">Not enrolled</span>
+            <div class="setup-action" data-setup-panel="token" hidden>
+              <div class="info-callout">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v-6m0-4h.01" /><circle cx="12" cy="12" r="9" /></svg>
+                <p>The companion only needs an installation token. Your account password stays on the website.</p>
+              </div>
+              <div class="action-row get-token-row">
+                <div><strong>1. Create a token</strong><small>WoW Markets opens in your browser.</small></div>
+                <button data-action id="get-token-button" type="button">Open installations</button>
+              </div>
+              <form class="token-form" id="token-form">
+                <label for="token-input">2. Paste the token</label>
+                <div class="input-action">
+                  <input autocomplete="off" id="token-input" name="token" placeholder="wms1_…" spellcheck="false" type="password" required />
+                  <button data-action type="submit">Connect</button>
+                </div>
+                <small>Stored in Keychain or Windows Credential Manager.</small>
+              </form>
             </div>
-            <label>
-              <span>Device name</span>
-              <input autocomplete="off" id="installation-name" name="installation_name" required />
-            </label>
-            <button data-action id="enroll-button" type="submit">Enroll this device</button>
-          </form>
 
-          <div id="scan-flow" class="flow-form" hidden>
-            <div class="panel-heading">
-              <h2>Find Scan Files</h2>
-              <span class="badge" id="scan-status">Not detected</span>
+            <div class="setup-action" data-setup-panel="wow" hidden>
+              <p>We could not find the Anniversary installation in a standard location.</p>
+              <div class="button-row">
+                <button data-action id="auto-detect-button" type="button">Try auto-detect</button>
+                <button class="secondary-button" data-action id="choose-wow-button" type="button">Choose WoW folder</button>
+              </div>
             </div>
-            <p class="muted" id="scan-help">Choose your World of Warcraft folder, or let the companion search standard install locations.</p>
-            <div class="actions">
-              <button data-action id="discover-button" type="button">Auto-detect</button>
-              <button data-action class="secondary" id="select-wow-folder-button" type="button">Choose WoW folder</button>
-            </div>
-          </div>
 
-          <div id="ready-flow" class="ready-flow" hidden>
-            <div>
-              <h2>Ready</h2>
-              <p id="ready-summary">The companion is configured and watching for scans.</p>
+            <div class="setup-action" data-setup-panel="addon" hidden>
+              <p>Install <strong>WowMarketScan</strong> for the Anniversary client, then check again.</p>
+              <div class="path-box"><span>Expected file</span><code id="expected-addon-path">—</code></div>
+              <button data-action id="addon-check-button" type="button">Check again</button>
             </div>
-            <div class="mini-stats">
-              <span><strong id="uploaded-count">0</strong> uploaded</span>
-              <span><strong id="queued-count">0</strong> queued</span>
-              <span><strong id="failed-count">0</strong> failed</span>
+
+            <div class="setup-action" data-setup-panel="saved_variables" hidden>
+              <ol class="instruction-list">
+                <li>Open World of Warcraft and run an Auctionator full scan.</li>
+                <li>Type <code>/reload</code> or log out so WoW saves the scan.</li>
+              </ol>
+              <p class="muted-copy">This screen checks automatically.</p>
+              <button class="secondary-button" data-action id="scan-check-button" type="button">Check now</button>
             </div>
-          </div>
-        </section>
+          </section>
+
+          <section class="dashboard" id="dashboard" hidden>
+            <div class="dashboard-grid">
+              <section class="panel last-scan-panel">
+                <div class="section-heading">
+                  <div><p class="kicker">Latest</p><h2>Last upload</h2></div>
+                  <span class="status-badge" id="last-upload-status">Waiting</span>
+                </div>
+                <div id="last-upload-content"></div>
+              </section>
+              <section class="panel counts-panel" aria-label="Upload totals">
+                <div><strong id="uploaded-count">0</strong><span>Uploaded</span></div>
+                <div><strong id="waiting-count">0</strong><span>Waiting</span></div>
+                <div><strong id="failed-count">0</strong><span>Failed</span></div>
+              </section>
+            </div>
+
+            <section class="panel recent-panel">
+              <div class="section-heading">
+                <div><p class="kicker">Activity</p><h2>Recent scans</h2></div>
+              </div>
+              <div class="recent-list" id="recent-list"></div>
+            </section>
+          </section>
+
+          <p class="background-note" id="background-note">The companion keeps watching when you close this window.</p>
+        </div>
       </section>
 
-      <section class="page" data-page="settings" hidden>
-        <section class="panel settings-panel">
-          <div class="panel-heading">
-            <h2>Settings</h2>
-          </div>
+      <section class="page settings-page" id="settings-page" hidden>
+        <div class="page-title-row">
+          <button class="back-button" id="back-button" type="button" aria-label="Back to overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+          <div><p class="kicker">Companion</p><h1>Settings</h1></div>
+          <button class="secondary-button compact-button" data-action id="refresh-settings-button" type="button">Recheck</button>
+        </div>
 
-          <section class="settings-section">
-            <div class="settings-heading">
-              <h3>Account</h3>
-              <span class="badge" id="account-page-status">Not signed in</span>
+        <section class="settings-card">
+          <div class="settings-section">
+            <div class="settings-copy"><h2>Installation token</h2><p id="settings-token-detail">Not connected</p></div>
+            <span class="status-badge" id="settings-token-status">Missing</span>
+            <div class="settings-actions">
+              <button class="secondary-button" data-action id="settings-open-token-button" type="button">Manage tokens</button>
+              <button class="secondary-button" id="replace-token-button" type="button" aria-controls="settings-token-form" aria-expanded="false">Replace</button>
+              <button class="danger-button" data-action id="remove-token-button" type="button">Forget</button>
             </div>
-            <div class="summary" id="account-summary" hidden>
-              <strong id="account-name">Signed in</strong>
-              <span id="account-email"></span>
-            </div>
-            <form id="account-login-form" class="flow-form">
-              <label>
-                <span>Email</span>
-                <input autocomplete="email" id="account-login-email" type="email" required />
-              </label>
-              <label>
-                <span>Password</span>
-                <input autocomplete="current-password" id="account-login-password" type="password" required />
-              </label>
-              <button data-action id="account-login-button" type="submit">Sign in</button>
+            <form class="settings-token-form" id="settings-token-form" hidden>
+              <label for="settings-token-input">Paste a replacement token</label>
+              <div class="input-action">
+                <input autocomplete="off" id="settings-token-input" placeholder="wms1_…" spellcheck="false" type="password" required />
+                <button data-action type="submit">Save</button>
+              </div>
             </form>
-            <div class="actions" id="account-actions">
-              <button data-action class="secondary" id="signout-button" type="button">Sign out</button>
-            </div>
-          </section>
-
-          <section class="settings-section">
-            <div class="settings-heading">
-              <h3>Installation</h3>
-              <span class="badge" id="installation-page-status">Not enrolled</span>
-            </div>
-            <form id="installation-enroll-form" class="flow-form">
-              <label>
-                <span>Device name</span>
-                <input autocomplete="off" id="installation-page-name" required />
-              </label>
-              <button data-action id="installation-enroll-button" type="submit">Enroll this device</button>
-            </form>
-            <div class="summary" id="installation-summary" hidden>
-              <strong id="enrolled-name">This device</strong>
-              <span id="token-prefix">Token stored</span>
-            </div>
-            <p class="muted" id="installation-blocked" hidden>Sign in before enrolling this installation.</p>
-            <div class="actions" id="installation-actions">
-              <button data-action class="secondary" id="remove-enrollment-button" type="button">Remove enrollment</button>
-            </div>
-          </section>
-
-          <section class="settings-section">
-            <div class="settings-heading">
-              <h3>Scan Files</h3>
-              <span class="badge" id="scan-page-status">Not detected</span>
-            </div>
-            <div class="summary">
-              <strong id="scan-summary">No scan file detected</strong>
-              <span id="scan-detail"></span>
-            </div>
-            <div class="detail-list compact-detail-list">
-              <span>WoW folder</span>
-              <strong id="wow-folder">Not selected</strong>
-              <span>Selected account</span>
-              <strong id="selected-account">None</strong>
-            </div>
-            <div class="actions">
-              <button data-action id="scan-discover-button" type="button">Auto-detect</button>
-              <button data-action class="secondary" id="scan-select-wow-folder-button" type="button">Choose WoW folder</button>
-            </div>
-          </section>
-
-          <section class="settings-section detected-section">
-            <div class="settings-heading">
-              <h3>Detected Accounts</h3>
-              <span class="badge" id="candidate-count">0 found</span>
-            </div>
-            <div class="candidate-list" id="candidate-list"></div>
-          </section>
-        </section>
-      </section>
-
-      <section class="page" data-page="uploads" hidden>
-        <section class="panel">
-          <div class="panel-heading">
-            <h2>Uploads</h2>
-            <span class="badge" id="watcher-state">Stopped</span>
+            <p class="settings-note">Forgetting a token here does not revoke it. Revoke tokens on the website.</p>
           </div>
-          <div class="upload-grid">
-            <div><strong id="uploads-page-uploaded">0</strong><span>Uploaded</span></div>
-            <div><strong id="archived-count">0</strong><span>Archived</span></div>
-            <div><strong id="uploads-page-queued">0</strong><span>Queued</span></div>
-            <div><strong id="uploads-page-failed">0</strong><span>Failed</span></div>
+
+          <div class="settings-section">
+            <div class="settings-copy"><h2>World of Warcraft</h2><p id="settings-wow-path">Not detected</p></div>
+            <span class="status-badge" id="settings-wow-status">Missing</span>
+            <div class="diagnostic-grid">
+              <span>Addon</span><strong id="settings-addon-state">Not found</strong>
+              <span>Scan data</span><strong id="settings-scan-state">Not found</strong>
+              <span>Account</span><strong id="settings-account">—</strong>
+            </div>
+            <div class="settings-actions">
+              <button class="secondary-button" data-action id="settings-auto-detect-button" type="button">Auto-detect</button>
+              <button class="secondary-button" data-action id="settings-choose-wow-button" type="button">Change folder</button>
+            </div>
+            <div class="account-list" id="account-list" hidden></div>
           </div>
-          <div class="detail-list">
-            <span>Last upload</span>
-            <strong id="last-upload">None</strong>
-            <span>Last archive</span>
-            <strong id="last-archive">None</strong>
-            <span>Last event</span>
-            <strong id="last-event">None</strong>
-            <span>Error</span>
-            <strong id="last-error">None</strong>
+
+          <div class="settings-section toggle-section" id="launch-at-login-section">
+            <label class="toggle-row" for="launch-at-login-toggle">
+              <span class="settings-copy"><strong>Start at login</strong><small>Launch quietly in the background when you sign in.</small></span>
+              <input id="launch-at-login-toggle" type="checkbox" role="switch" />
+              <span class="toggle-control" aria-hidden="true"></span>
+            </label>
           </div>
-          <div class="actions">
-            <button data-action id="start-button" type="button">Start watcher</button>
-            <button data-action class="secondary" id="stop-button" type="button">Stop watcher</button>
+
+          <div class="settings-section about-section">
+            <div class="settings-copy"><h2>About</h2><p>WoW Markets Companion <span id="app-version">v1.0.0</span></p></div>
+            <div class="diagnostic-grid">
+              <span>Local data</span><strong id="settings-data-dir">—</strong>
+              <span>Watcher</span><strong id="settings-watcher-state">Stopped</strong>
+            </div>
           </div>
         </section>
       </section>

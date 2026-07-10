@@ -7,17 +7,34 @@ import (
 )
 
 const (
-	keyringService           = "Wow Market Scan"
+	keyringService           = "WoW Markets Companion"
+	legacyKeyringService     = "Wow Market Scan"
 	keyringInstallationToken = "installation-token"
-	keyringRefreshToken      = "refresh-token"
 )
 
 func loadInstallationToken() (string, error) {
 	token, err := keyring.Get(keyringService, keyringInstallationToken)
-	if errors.Is(err, keyring.ErrNotFound) {
+	if err == nil {
+		return token, nil
+	}
+	if !errors.Is(err, keyring.ErrNotFound) {
+		return "", err
+	}
+
+	legacyToken, legacyErr := keyring.Get(legacyKeyringService, keyringInstallationToken)
+	if errors.Is(legacyErr, keyring.ErrNotFound) {
 		return "", nil
 	}
-	return token, err
+	if legacyErr != nil {
+		return "", legacyErr
+	}
+	if err := keyring.Set(keyringService, keyringInstallationToken, legacyToken); err != nil {
+		return "", err
+	}
+	if err := keyring.Delete(legacyKeyringService, keyringInstallationToken); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return legacyToken, err
+	}
+	return legacyToken, nil
 }
 
 func saveInstallationToken(token string) error {
@@ -25,27 +42,11 @@ func saveInstallationToken(token string) error {
 }
 
 func deleteInstallationToken() error {
+	legacyErr := keyring.Delete(legacyKeyringService, keyringInstallationToken)
+	if legacyErr != nil && !errors.Is(legacyErr, keyring.ErrNotFound) {
+		return legacyErr
+	}
 	err := keyring.Delete(keyringService, keyringInstallationToken)
-	if errors.Is(err, keyring.ErrNotFound) {
-		return nil
-	}
-	return err
-}
-
-func loadRefreshToken() (string, error) {
-	token, err := keyring.Get(keyringService, keyringRefreshToken)
-	if errors.Is(err, keyring.ErrNotFound) {
-		return "", nil
-	}
-	return token, err
-}
-
-func saveRefreshToken(token string) error {
-	return keyring.Set(keyringService, keyringRefreshToken, token)
-}
-
-func deleteRefreshToken() error {
-	err := keyring.Delete(keyringService, keyringRefreshToken)
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil
 	}

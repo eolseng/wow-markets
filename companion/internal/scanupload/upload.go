@@ -36,6 +36,17 @@ const (
 type Record struct {
 	Checksum        string `json:"checksum"`
 	ArchivePath     string `json:"archive_path"`
+	CapturedAt      int64  `json:"captured_at,omitempty"`
+	ImportedAt      string `json:"imported_at,omitempty"`
+	Region          string `json:"region,omitempty"`
+	Realm           string `json:"realm,omitempty"`
+	Market          string `json:"market,omitempty"`
+	Faction         string `json:"faction,omitempty"`
+	AuctionHouse    string `json:"auction_house,omitempty"`
+	ScannerName     string `json:"scanner_name,omitempty"`
+	ScannerRealm    string `json:"scanner_realm,omitempty"`
+	ArchiveRows     int    `json:"archive_rows,omitempty"`
+	ArchiveItems    int    `json:"archive_items,omitempty"`
 	Status          Status `json:"status"`
 	Attempts        int    `json:"attempts"`
 	QueuedAt        string `json:"queued_at"`
@@ -44,6 +55,7 @@ type Record struct {
 	UploadedAt      string `json:"uploaded_at,omitempty"`
 	LastError       string `json:"last_error,omitempty"`
 	Retryable       bool   `json:"retryable"`
+	HTTPStatus      int    `json:"http_status,omitempty"`
 	ServerStatus    string `json:"server_status,omitempty"`
 	ScanID          int64  `json:"scan_id,omitempty"`
 	SubmissionID    string `json:"submission_id,omitempty"`
@@ -62,6 +74,10 @@ type QueueResult struct {
 type Result struct {
 	Record Record
 }
+
+// ProgressFunc receives an uploading record after it has been persisted and
+// immediately before its HTTP request begins.
+type ProgressFunc func(Record)
 
 type state struct {
 	Version int               `json:"version"`
@@ -123,6 +139,63 @@ func New(dataDir, apiURL, token string, timeout time.Duration) (*Agent, error) {
 	}, nil
 }
 
+// ReadRecords loads the persisted upload records without requiring API
+// credentials. Records are returned newest-first by their latest activity.
+func ReadRecords(dataDir string) ([]Record, error) {
+	absoluteDataDir, err := resolveDataDir(dataDir)
+	if err != nil {
+		return nil, err
+	}
+	currentState, err := loadState(absoluteDataDir)
+	if err != nil {
+		return nil, err
+	}
+	return recordsFromState(currentState), nil
+}
+
+// ResetFailedAuthorization requeues uploads rejected with HTTP 401 or 403.
+// This is intended to be called after replacing an installation token.
+func ResetFailedAuthorization(dataDir string) (int, error) {
+	absoluteDataDir, err := resolveDataDir(dataDir)
+	if err != nil {
+		return 0, err
+	}
+	currentState, err := loadState(absoluteDataDir)
+	if err != nil {
+		return 0, err
+	}
+
+	reset := 0
+	for checksum, record := range currentState.Uploads {
+		if record.Status != StatusFailed || !isAuthorizationFailure(record) {
+			continue
+		}
+		record.Status = StatusPending
+		record.Retryable = false
+		record.NextAttemptAt = ""
+		record.LastError = ""
+		record.HTTPStatus = 0
+		currentState.Uploads[checksum] = record
+		reset++
+	}
+	if reset == 0 {
+		return 0, nil
+	}
+	if err := writeState(absoluteDataDir, currentState); err != nil {
+		return 0, err
+	}
+	return reset, nil
+}
+
+// Records loads this agent's persisted records newest-first.
+func (agent *Agent) Records() ([]Record, error) {
+	currentState, err := agent.loadState()
+	if err != nil {
+		return nil, err
+	}
+	return recordsFromState(currentState), nil
+}
+
 func (agent *Agent) Queue(records []scanarchive.Record) ([]QueueResult, error) {
 	currentState, err := agent.loadState()
 	if err != nil {
@@ -142,7 +215,8 @@ func (agent *Agent) Queue(records []scanarchive.Record) ([]QueueResult, error) {
 		case archive.ArchivePath == "":
 			result.Skipped = "missing archive path"
 		default:
-			if _, exists := currentState.Uploads[archive.Checksum]; !exists {
+			record, exists := currentState.Uploads[archive.Checksum]
+			if !exists {
 				absoluteArchivePath, err := filepath.Abs(archive.ArchivePath)
 				if err != nil {
 					return nil, fmt.Errorf(
@@ -151,13 +225,17 @@ func (agent *Agent) Queue(records []scanarchive.Record) ([]QueueResult, error) {
 						err,
 					)
 				}
-				currentState.Uploads[archive.Checksum] = Record{
+				record = Record{
 					Checksum:    archive.Checksum,
 					ArchivePath: absoluteArchivePath,
 					Status:      StatusPending,
 					QueuedAt:    now,
 				}
 				result.Queued = true
+			}
+			updated := withArchiveMetadata(record, archive)
+			if !exists || updated != record {
+				currentState.Uploads[archive.Checksum] = updated
 				changed = true
 			}
 		}
@@ -173,10 +251,28 @@ func (agent *Agent) Queue(records []scanarchive.Record) ([]QueueResult, error) {
 }
 
 func (agent *Agent) ProcessDue(ctx context.Context) ([]Result, error) {
-	return agent.ProcessDueLimit(ctx, 0)
+	return agent.ProcessDueWithProgress(ctx, nil)
 }
 
 func (agent *Agent) ProcessDueLimit(ctx context.Context, limit int) ([]Result, error) {
+	return agent.ProcessDueLimitWithProgress(ctx, limit, nil)
+}
+
+// ProcessDueWithProgress processes every due record and reports each attempt
+// immediately before its HTTP request begins.
+func (agent *Agent) ProcessDueWithProgress(
+	ctx context.Context,
+	progress ProgressFunc,
+) ([]Result, error) {
+	return agent.ProcessDueLimitWithProgress(ctx, 0, progress)
+}
+
+// ProcessDueLimitWithProgress is ProcessDueWithProgress with an attempt limit.
+func (agent *Agent) ProcessDueLimitWithProgress(
+	ctx context.Context,
+	limit int,
+	progress ProgressFunc,
+) ([]Result, error) {
 	currentState, err := agent.loadState()
 	if err != nil {
 		return nil, err
@@ -218,13 +314,18 @@ func (agent *Agent) ProcessDueLimit(ctx context.Context, limit int) ([]Result, e
 		record.LastAttemptAt = attemptedAt.Format(time.RFC3339)
 		record.NextAttemptAt = ""
 		record.LastError = ""
+		record.HTTPStatus = 0
 		currentState.Uploads[checksum] = record
 		if err := agent.writeState(currentState); err != nil {
 			return results, err
 		}
+		if progress != nil {
+			progress(record)
+		}
 
-		response, retryable, uploadErr := agent.upload(ctx, record)
+		response, httpStatus, retryable, uploadErr := agent.upload(ctx, record)
 		finishedAt := agent.now().UTC()
+		record.HTTPStatus = httpStatus
 		if uploadErr == nil {
 			record.Status = StatusUploaded
 			record.UploadedAt = finishedAt.Format(time.RFC3339)
@@ -254,10 +355,13 @@ func (agent *Agent) ProcessDueLimit(ctx context.Context, limit int) ([]Result, e
 	return results, nil
 }
 
-func (agent *Agent) upload(ctx context.Context, record Record) (uploadResponse, bool, error) {
+func (agent *Agent) upload(
+	ctx context.Context,
+	record Record,
+) (uploadResponse, int, bool, error) {
 	file, err := os.Open(record.ArchivePath)
 	if err != nil {
-		return uploadResponse{}, false, fmt.Errorf("open archive: %w", err)
+		return uploadResponse{}, 0, false, fmt.Errorf("open archive: %w", err)
 	}
 	defer file.Close()
 
@@ -268,28 +372,28 @@ func (agent *Agent) upload(ctx context.Context, record Record) (uploadResponse, 
 		file,
 	)
 	if err != nil {
-		return uploadResponse{}, false, fmt.Errorf("create request: %w", err)
+		return uploadResponse{}, 0, false, fmt.Errorf("create request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+agent.token)
 	request.Header.Set("Content-Type", "application/gzip")
 
 	response, err := agent.client.Do(request)
 	if err != nil {
-		return uploadResponse{}, true, fmt.Errorf("send scan: %w", err)
+		return uploadResponse{}, 0, true, fmt.Errorf("send scan: %w", err)
 	}
 	defer response.Body.Close()
 
 	payload, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if err != nil {
-		return uploadResponse{}, true, fmt.Errorf("read response: %w", err)
+		return uploadResponse{}, response.StatusCode, true, fmt.Errorf("read response: %w", err)
 	}
 	if len(payload) > maxResponseBytes {
-		return uploadResponse{}, false, errors.New("API response exceeds size limit")
+		return uploadResponse{}, response.StatusCode, false, errors.New("API response exceeds size limit")
 	}
 
 	if response.StatusCode != http.StatusOK &&
 		response.StatusCode != http.StatusCreated {
-		return uploadResponse{}, isRetryableStatus(response.StatusCode), apiError(
+		return uploadResponse{}, response.StatusCode, isRetryableStatus(response.StatusCode), apiError(
 			response.StatusCode,
 			payload,
 		)
@@ -299,29 +403,33 @@ func (agent *Agent) upload(ctx context.Context, record Record) (uploadResponse, 
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&result); err != nil {
-		return uploadResponse{}, false, fmt.Errorf("decode success response: %w", err)
+		return uploadResponse{}, response.StatusCode, false, fmt.Errorf("decode success response: %w", err)
 	}
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
-		return uploadResponse{}, false, errors.New("decode success response: trailing JSON value")
+		return uploadResponse{}, response.StatusCode, false, errors.New("decode success response: trailing JSON value")
 	}
 	if result.Status != "accepted" && result.Status != "duplicate" {
-		return uploadResponse{}, false, fmt.Errorf(
+		return uploadResponse{}, response.StatusCode, false, fmt.Errorf(
 			"API returned unsupported success status %q",
 			result.Status,
 		)
 	}
 	if result.Checksum != record.Checksum {
-		return uploadResponse{}, false, fmt.Errorf(
+		return uploadResponse{}, response.StatusCode, false, fmt.Errorf(
 			"API checksum %s does not match queued checksum %s",
 			result.Checksum,
 			record.Checksum,
 		)
 	}
-	return result, false, nil
+	return result, response.StatusCode, false, nil
 }
 
 func (agent *Agent) loadState() (state, error) {
-	path := filepath.Join(agent.dataDir, "uploads.json")
+	return loadState(agent.dataDir)
+}
+
+func loadState(dataDir string) (state, error) {
+	path := filepath.Join(dataDir, "uploads.json")
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return state{Version: stateVersion, Uploads: map[string]Record{}}, nil
@@ -351,7 +459,11 @@ func (agent *Agent) loadState() (state, error) {
 }
 
 func (agent *Agent) writeState(value state) error {
-	if err := os.MkdirAll(agent.dataDir, 0o700); err != nil {
+	return writeState(agent.dataDir, value)
+}
+
+func writeState(dataDir string, value state) error {
+	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return fmt.Errorf("create importer data directory: %w", err)
 	}
 	payload, err := json.MarshalIndent(value, "", "  ")
@@ -359,10 +471,83 @@ func (agent *Agent) writeState(value state) error {
 		return fmt.Errorf("encode upload state: %w", err)
 	}
 	payload = append(payload, '\n')
-	if err := writeAtomic(filepath.Join(agent.dataDir, "uploads.json"), payload); err != nil {
+	if err := writeAtomic(filepath.Join(dataDir, "uploads.json"), payload); err != nil {
 		return fmt.Errorf("write upload state: %w", err)
 	}
 	return nil
+}
+
+func resolveDataDir(dataDir string) (string, error) {
+	if dataDir == "" {
+		return "", errors.New("data directory is required")
+	}
+	absoluteDataDir, err := filepath.Abs(dataDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve data directory: %w", err)
+	}
+	return absoluteDataDir, nil
+}
+
+func recordsFromState(currentState state) []Record {
+	records := make([]Record, 0, len(currentState.Uploads))
+	for _, record := range currentState.Uploads {
+		records = append(records, record)
+	}
+	sort.Slice(records, func(left, right int) bool {
+		leftActivity := latestActivity(records[left])
+		rightActivity := latestActivity(records[right])
+		if leftActivity.Equal(rightActivity) {
+			return records[left].Checksum < records[right].Checksum
+		}
+		return leftActivity.After(rightActivity)
+	})
+	return records
+}
+
+func latestActivity(record Record) time.Time {
+	var latest time.Time
+	for _, value := range []string{
+		record.QueuedAt,
+		record.LastAttemptAt,
+		record.UploadedAt,
+	} {
+		parsed, err := time.Parse(time.RFC3339, value)
+		if err == nil && parsed.After(latest) {
+			latest = parsed
+		}
+	}
+	return latest
+}
+
+func withArchiveMetadata(record Record, archive scanarchive.Record) Record {
+	record.CapturedAt = archive.CapturedAt
+	record.ImportedAt = archive.ImportedAt
+	record.Region = archive.Region
+	record.Realm = archive.Realm
+	record.Market = archive.Market
+	record.Faction = archive.Faction
+	record.AuctionHouse = archive.AuctionHouse
+	record.ScannerName = archive.ScannerName
+	record.ScannerRealm = archive.ScannerRealm
+	record.ArchiveRows = archive.RowCount
+	record.ArchiveItems = archive.ItemCount
+	return record
+}
+
+func isAuthorizationFailure(record Record) bool {
+	if record.HTTPStatus == http.StatusUnauthorized ||
+		record.HTTPStatus == http.StatusForbidden {
+		return true
+	}
+	// Older records only retain the rendered API error. Recognize the exact
+	// authorization prefixes so replacing a token can recover them too.
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		if strings.HasPrefix(record.LastError, fmt.Sprintf("API returned %d ", status)) ||
+			record.LastError == fmt.Sprintf("API returned HTTP %d", status) {
+			return true
+		}
+	}
+	return false
 }
 
 func (agent *Agent) backoff(attempts int) time.Duration {

@@ -1,101 +1,101 @@
-# Wow Market Scan Companion
+# WoW Markets Companion
 
-Wails v2 desktop app (macOS and Windows) that gets addon captures into WoW
-Markets. It signs in to the API, enrolls the device as an uploader
-installation, discovers the WoW Anniversary `WowMarketScan.lua` SavedVariables
-file, and then watches it in the background: every new scan is archived
-locally as canonical gzip JSON and uploaded to `POST /v1/scans`.
+Wails v2 desktop app for macOS and Windows that watches WoW Classic
+Anniversary SavedVariables, archives new WoW Markets addon captures as
+canonical gzip JSON, and uploads them to `POST /v1/scans`.
 
-The API URL is hardcoded to production (`https://api.wowmarkets.app` in
-`config.go`) — there is no dev/staging switch, so `wails dev` also talks to
-production.
+The companion does not handle account login. Users create an installation
+token at <https://wowmarkets.app/account/installations>, paste it into the app,
+and the full token is stored in macOS Keychain or Windows Credential Manager.
 
-This directory is the repository's Go module. `internal/` holds the scan-file
-parsing, validation, archiving, and upload packages; `third_party/` vendors a
-systray fork used by the Windows tray icon; `testdata/` holds the shared
-SavedVariables fixture.
-
-## Run
+## Run and verify
 
 ```sh
-cd companion
-go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 dev    # run
-go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 build  # package to build/bin/
-go test ./...
+make companion        # Wails dev; talks to the production API
+make companion-check  # formatting, frontend tests, Go tests, and build
+make companion-build  # package to companion/build/bin
 ```
 
-Or install the CLI once (`go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0`)
-and use `wails dev` / `wails build`.
+The Go module root is `companion/`. `frontend/dist/` is hand-written vanilla
+HTML, CSS, and JavaScript; there is no npm dependency or bundler step. The UI
+uses Wails bindings at `window.go.main.App`, listens for lifecycle snapshots,
+and retains polling as a recovery path.
 
-The UI in `frontend/dist` is hand-written vanilla HTML/JS/CSS committed
-directly — there is no npm install or bundler step. It calls Go through the
-Wails runtime (`window.go.main.App`) and polls `Snapshot()` for state.
+## Startup and onboarding
 
-## Local data
+Startup checks four independent prerequisites and focuses the first missing
+one:
 
-Everything lives under the OS user config directory
-(macOS: `~/Library/Application Support/WowMarketScan`,
-Windows: `%AppData%/WowMarketScan`):
+1. An installation token is stored.
+2. a World of Warcraft installation with `_anniversary_` is detected.
+3. `_anniversary_/Interface/AddOns/WowMarketScan/WowMarketScan.toc` exists.
+4. a parseable
+   `_anniversary_/WTF/Account/*/SavedVariables/WowMarketScan.lua` exists.
 
-- `config.json` — email, installation name, installation token prefix
-  (non-secret), scan file path, WoW install path.
-- `data/scans/<sha256>.json.gz` — immutable scan archives, deduplicated by
-  checksum in `data/state.json`. Archives are kept after upload; the server
-  stores only derived data, so these are the raw replay source.
-- `data/uploads.json` — upload queue state.
+Incomplete setup is rechecked every three seconds. A correct installation with
+no SavedVariables is an expected state: run an Auctionator full scan, then
+`/reload` or log out. The watcher starts automatically once setup is complete.
 
-Secrets are not in `config.json`: the refresh token and installation token are
-stored in the macOS Keychain / Windows Credential Manager (service
-`Wow Market Scan`).
+## Upload state
 
-The watcher polls the SavedVariables file every 5 seconds, never writes to it,
-and retries failed uploads with exponential backoff (5s doubling to 15m).
-Checksum duplicates from the server count as success.
+The watcher polls the selected SavedVariables file every five seconds and
+never writes to it. New scans are deduplicated by canonical checksum, archived,
+queued, and uploaded sequentially. Retryable failures use exponential backoff
+from five seconds to fifteen minutes. Server duplicates count as success.
 
-## Runtime behavior
+Dashboard counts and current/recent scan details are rebuilt from durable
+archive and upload records, so they survive restarts and accurately distinguish
+waiting, uploading, uploaded, and failed scans. Replacing a rejected token
+requeues scans that failed with HTTP 401 or 403.
 
-- macOS shows a native menu-bar status item (no Dock icon); Windows uses a
-  notification-area tray icon. Closing the window hides it; the watcher keeps
-  running. The icon menu has Show/Hide Window and Quit.
-- Account sign-in and installation enrollment are separate steps. Signing out
-  keeps the enrolled uploader active; removing enrollment deletes the
-  installation token and stops uploads.
-- Scan-file discovery checks the `WOW_MARKET_SCAN_FILE` environment variable
-  first, then the configured WoW folder, then standard install paths, globbing
-  `_anniversary_/WTF/Account/*/SavedVariables/WowMarketScan.lua` and selecting
-  the newest file that parses.
+## Local data and compatibility
+
+Application data remains under the legacy `WowMarketScan` config directory to
+preserve pre-1.0 archives and queues:
+
+- macOS: `~/Library/Application Support/WowMarketScan`
+- Windows: `%AppData%/WowMarketScan`
+
+`config.json` stores non-secret paths and a token hint. `data/state.json` and
+`data/scans/*.json.gz` are the canonical local archive; `data/uploads.json` is
+the durable queue. The current credential-store service is
+`WoW Markets Companion`; an existing token under legacy service
+`Wow Market Scan` is migrated on first load.
+
+## Background operation
+
+Closing the window hides it while the menu-bar or notification-area icon and
+watcher continue. Start at login is optional:
+
+- macOS writes a per-user LaunchAgent that starts the current app executable
+  with `--background`.
+- Windows writes the per-user `Run` registry value and also uses
+  `--background`.
+
+Keep the installed app in a stable location before enabling this setting.
+Manual launches are visible; login launches start hidden. A single-instance
+lock prevents duplicate watchers.
 
 ## Distribution
 
-The `Companion Build` GitHub Actions workflow builds macOS arm64 and Windows
-x64 zips as artifacts on every PR and push to `main` (plus manual dispatch).
-Automatic public distribution is on the roadmap; builds are currently shared
-manually.
+The `Companion Build` workflow builds the macOS arm64 app and Windows x64
+executable. macOS builds use Developer ID signing and notarization when secrets
+are configured, otherwise ad-hoc signing. Release artifacts use the
+`wow-markets-companion-*` name.
 
-### macOS signing
+## Manual smoke test
 
-CI ad-hoc signs macOS artifacts when Apple secrets are absent. For a
-notarized, Gatekeeper-friendly build, configure repository secrets:
-
-- `APPLE_DEVELOPER_ID_CERTIFICATE_BASE64` — base64 `.p12` export of the
-  Developer ID Application certificate.
-- `APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD` — password for the export.
-- `APPLE_DEVELOPER_ID_APPLICATION` — optional codesign identity; defaults to
-  the first Developer ID Application identity in the certificate.
-- `APPLE_CODESIGN_KEYCHAIN_PASSWORD` — optional temporary CI keychain password.
-- `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` — notarization.
-
-With secrets present, CI signs with hardened runtime, notarizes, staples, and
-verifies Gatekeeper assessment before uploading the artifact.
-
-## Manual test checklist
-
-1. Start with `wails dev`.
-2. Confirm the status/tray icon appears immediately.
-3. Sign in with a web-app email/password, then enroll the installation.
-4. Confirm scan-file auto-detection reports ready when a
-   `WowMarketScan.lua` exists (or select the WoW folder manually).
-5. Confirm the Uploads page shows archived, queued, uploaded, and failed
-   counts.
-6. Close the window; confirm the process keeps running, `Show Window`
-   restores it, and Quit exits.
+1. Start with no stored token and confirm the loading screen resolves to token
+   onboarding with no email/password fields.
+2. Open the installations page, paste a valid token, and confirm only its hint
+   is displayed afterward.
+3. Exercise missing WoW folder, missing addon, and missing SavedVariables in
+   turn; confirm each has distinct guidance.
+4. Using a legitimate scan in a disposable production-linked OS account, run
+   `/reload` and confirm automatic detection, detected/uploading/success states,
+   and row/item data. Never upload fixtures or synthetic scans: development
+   builds target the production API, while automated upload coverage uses local
+   test servers.
+5. Close and restore the window from the tray/menu bar.
+6. Enable and disable Start at login, then verify a login launch in a disposable
+   OS account or VM.

@@ -13,6 +13,8 @@ func TestLaunchAgentPayloadEscapesExecutableAndStartsHidden(t *testing.T) {
 		launchAgentLabel,
 		`/Applications/WoW &amp; Markets.app/Contents/MacOS/WoW Markets Companion`,
 		backgroundLaunchArgument,
+		"<key>AssociatedBundleIdentifiers</key>",
+		"<string>com.wowmarkets.companion</string>",
 		"<key>RunAtLoad</key>",
 	} {
 		if !strings.Contains(payload, expected) {

@@ -83,11 +83,15 @@ func launchAgentPayload(executable string) []byte {
     <string>%s</string>
     <string>%s</string>
   </array>
+  <key>AssociatedBundleIdentifiers</key>
+  <array>
+    <string>%s</string>
+  </array>
   <key>RunAtLoad</key>
   <true/>
 </dict>
 </plist>
-`, launchAgentLabel, escaped.String(), backgroundLaunchArgument))
+`, launchAgentLabel, escaped.String(), backgroundLaunchArgument, launchAgentLabel))
 }
 
 func writeLaunchAgent(path string, payload []byte) error {

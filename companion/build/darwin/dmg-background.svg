@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="400" viewBox="0 0 660 400">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1626"/>
+      <stop offset="0.55" stop-color="#080f1c"/>
+      <stop offset="1" stop-color="#060b13"/>
+    </linearGradient>
+    <radialGradient id="goldGlow" cx="0" cy="0" r="1" gradientTransform="translate(150 195) rotate(90) scale(190)">
+      <stop stop-color="#f2bd55" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#f2bd55" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="0" cy="0" r="1" gradientTransform="translate(510 190) rotate(90) scale(205)">
+      <stop stop-color="#67dced" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#67dced" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="arrow" x1="260" y1="0" x2="405" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f2bd55"/>
+      <stop offset="1" stop-color="#67dced"/>
+    </linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#7890b3" stroke-opacity="0.055"/>
+    </pattern>
+  </defs>
+
+  <rect width="660" height="400" fill="url(#background)"/>
+  <rect width="660" height="400" fill="url(#grid)"/>
+  <rect width="660" height="400" fill="url(#goldGlow)"/>
+  <rect width="660" height="400" fill="url(#cyanGlow)"/>
+
+  <text x="330" y="58" fill="#f7d98c" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="21" font-weight="700" text-anchor="middle">WoW Markets Companion</text>
+  <text x="330" y="83" fill="#91a0b7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="500" text-anchor="middle">Drag the app into Applications to install</text>
+
+  <g fill="none" stroke="url(#arrow)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M267 211h119" stroke-width="3"/>
+    <path d="m374 199 13 12-13 12" stroke-width="3"/>
+  </g>
+  <circle cx="267" cy="211" r="4" fill="#f2bd55"/>
+</svg>

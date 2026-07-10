@@ -81,10 +81,11 @@ lock prevents duplicate watchers.
 The `Companion Build` workflow builds the macOS arm64 app and Windows x64
 executable. macOS builds use Developer ID signing and notarization when secrets
 are configured, otherwise ad-hoc signing. The macOS artifact is a disk image
-containing `WoW Markets Companion.app` and an Applications link for drag-and-drop
-installation. The Windows artifact is an unsigned Wails NSIS installer that
-installs the app in Program Files and registers an uninstaller. Release artifacts
-use the `wow-markets-companion-*` name.
+with a branded Finder layout containing `WoW Markets Companion.app` and an
+Applications link for drag-and-drop installation. The Windows artifact is an
+unsigned Wails NSIS installer that installs the app in Program Files and
+registers an uninstaller. Release artifacts use the `wow-markets-companion-*`
+name.
 
 ## Manual smoke test
 

@@ -3,4 +3,6 @@
 /build/darwin/*
 !/build/darwin/Info.plist
 !/build/darwin/Info.dev.plist
+!/build/darwin/dmg-background.png
+!/build/darwin/dmg-background.svg
 /frontend/wailsjs/

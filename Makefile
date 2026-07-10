@@ -1,8 +1,16 @@
 WAILS := go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 
-.PHONY: check addon-check companion companion-build companion-check contract-check fmt
+.PHONY: addon-check addon-package check companion companion-build companion-check contract-check fmt release-check
 
 check: contract-check addon-check companion-check
+
+release-check:
+	./scripts/release/validate-version.sh companion "$$(jq -r .info.productVersion companion/wails.json)"
+	./scripts/release/validate-version.sh addon "$$(awk -F ': ' '/^## Version: / { print $$2; exit }' addon/WoWMarkets/WoWMarkets.toc)"
+	./scripts/release/package-addon.sh dist/wow-markets-addon.zip
+
+addon-package:
+	./scripts/release/package-addon.sh dist/wow-markets-addon.zip
 
 contract-check:
 	cd contracts/scan-archive/v1 && shasum -a 256 -c checksums.txt

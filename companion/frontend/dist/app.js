@@ -261,7 +261,7 @@ function renderSettings(snapshot) {
   elements.launchAtLoginSection.hidden = !snapshot.launch_at_login_supported
   elements.launchAtLoginToggle.checked = Boolean(snapshot.launch_at_login)
   elements.launchAtLoginToggle.disabled = state.busy || !snapshot.launch_at_login_supported
-  elements.appVersion.textContent = `v${snapshot.version || "1.0.0"}`
+  elements.appVersion.textContent = snapshot.version ? `v${snapshot.version}` : "Version unavailable"
   elements.settingsDataDir.textContent = snapshot.data_dir || "—"
   elements.settingsWatcherState.textContent = snapshot.running ? "Running in the background" : snapshot.ready ? "Starting" : "Waiting for setup"
 }

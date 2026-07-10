@@ -24,6 +24,12 @@ func TestConfiguredServiceEndpointsDefaultToLoopback(t *testing.T) {
 	}
 }
 
+func TestCompanionVersionComesFromWailsConfig(t *testing.T) {
+	if actual := companionVersion(); actual != "1.0.0" {
+		t.Fatalf("companionVersion() = %q, want %q", actual, "1.0.0")
+	}
+}
+
 func TestConfiguredServiceEndpointsRequireExplicitDevelopmentOverride(t *testing.T) {
 	t.Setenv("WOW_MARKETS_API_URL", "https://example.invalid/")
 	t.Setenv("WOW_MARKETS_INSTALLATIONS_URL", "https://example.invalid/installations")

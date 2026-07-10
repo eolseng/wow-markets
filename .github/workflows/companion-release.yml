@@ -1,0 +1,281 @@
+name: Companion Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact companion semantic version from companion/wails.json
+        required: true
+        type: string
+      create_draft_release:
+        description: Create a GitHub draft release after validation
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: companion-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: companion/go.mod
+          cache-dependency-path: companion/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.14.1
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install --yes lua5.1
+      - name: Require protected main source
+        run: test "$GITHUB_REF" = refs/heads/main
+      - id: version
+        name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ./scripts/release/validate-version.sh companion "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Verify client
+        run: make check
+
+  macos:
+    needs: validate
+    runs-on: macos-26
+    environment: release
+    permissions:
+      contents: read
+    env:
+      PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+      INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: companion/go.mod
+          cache-dependency-path: companion/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.14.1
+      - name: Validate release configuration
+        env:
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          test -n "$PRODUCTION_API_URL"
+          test -n "$INSTALLATIONS_URL"
+          test -n "$APPLE_CERTIFICATE"
+          test -n "$APPLE_CERTIFICATE_PASSWORD"
+          test -n "$APPLE_ID"
+          test -n "$APPLE_APP_SPECIFIC_PASSWORD"
+          test -n "$APPLE_TEAM_ID"
+      - name: Import Developer ID certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          CONFIGURED_IDENTITY: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+        run: |
+          keychain_password=$(uuidgen)
+          certificate_path="$RUNNER_TEMP/developer-id.p12"
+          keychain_path="$RUNNER_TEMP/wow-markets-signing.keychain-db"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$certificate_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain_path"
+          security list-keychains -d user -s "$keychain_path" $(security list-keychains -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain_path"
+          identity=$CONFIGURED_IDENTITY
+          if [ -z "$identity" ]; then
+            identity=$(security find-identity -v -p codesigning "$keychain_path" | awk -F '"' '/Developer ID Application/ { print $2; exit }')
+          fi
+          test -n "$identity"
+          echo "APPLE_CODESIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+      - name: Build Apple Silicon app
+        working-directory: companion
+        run: |
+          ldflags="-X main.officialAPIURL=$PRODUCTION_API_URL -X main.officialInstallationsURL=$INSTALLATIONS_URL"
+          go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build \
+            -clean -platform darwin/arm64 -ldflags "$ldflags"
+      - name: Sign, package, and notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          app_path=$(find companion/build/bin -maxdepth 1 -type d -name '*.app' -print)
+          test $(printf '%s\n' "$app_path" | grep -c .) -eq 1
+          codesign --force --deep --options runtime --timestamp \
+            --sign "$APPLE_CODESIGN_IDENTITY" "$app_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          spctl --assess --type execute --verbose=2 "$app_path"
+
+          mkdir -p companion/dist "$RUNNER_TEMP/dmg/WoW Markets Companion"
+          ditto "$app_path" "$RUNNER_TEMP/dmg/WoW Markets Companion/WoW Markets Companion.app"
+          ln -s /Applications "$RUNNER_TEMP/dmg/WoW Markets Companion/Applications"
+          dmg_path=companion/dist/wow-markets-companion-macos-arm64.dmg
+          hdiutil create -volname "WoW Markets Companion" \
+            -srcfolder "$RUNNER_TEMP/dmg/WoW Markets Companion" \
+            -ov -format UDZO "$dmg_path"
+          codesign --force --timestamp --sign "$APPLE_CODESIGN_IDENTITY" "$dmg_path"
+          codesign --verify --strict --verbose=2 "$dmg_path"
+          xcrun notarytool submit "$dmg_path" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple "$dmg_path"
+          xcrun stapler validate "$dmg_path"
+          hdiutil verify "$dmg_path"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg_path"
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: companion/build/bin
+          format: spdx-json
+          output-file: companion/dist/wow-markets-companion-macos-arm64.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: companion-macos-arm64
+          path: companion/dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    needs: validate
+    runs-on: windows-latest
+    environment: release
+    permissions:
+      contents: read
+    env:
+      PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+      INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: companion/go.mod
+          cache-dependency-path: companion/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.14.1
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis --no-progress --yes
+      - name: Build Windows x64 installer
+        working-directory: companion
+        shell: pwsh
+        run: |
+          if (-not $env:PRODUCTION_API_URL -or -not $env:INSTALLATIONS_URL) {
+            throw "release service origins are required"
+          }
+          $ldflags = "-X main.officialAPIURL=$env:PRODUCTION_API_URL -X main.officialInstallationsURL=$env:INSTALLATIONS_URL"
+          go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build -clean -platform windows/amd64 -nsis -ldflags $ldflags
+          $installer = @(Get-ChildItem build/bin -Filter "*-installer.exe")
+          if ($installer.Count -ne 1) {
+            throw "expected exactly one NSIS installer, found $($installer.Count)"
+          }
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item $installer[0].FullName dist/wow-markets-companion-windows-amd64-setup.exe
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: companion/build/bin
+          format: spdx-json
+          output-file: companion/dist/wow-markets-companion-windows-amd64.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: companion-windows-amd64
+          path: companion/dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  assemble:
+    needs: [validate, macos, windows]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: companion-*
+          path: release-assets
+          merge-multiple: true
+      - name: Validate and checksum assets
+        run: |
+          ./scripts/release/validate-companion-artifacts.sh release-assets
+          (cd release-assets && sha256sum \
+            wow-markets-companion-macos-arm64.dmg \
+            wow-markets-companion-windows-amd64-setup.exe \
+            wow-markets-companion-macos-arm64.spdx.json \
+            wow-markets-companion-windows-amd64.spdx.json > SHA256SUMS)
+          (cd release-assets && sha256sum -c SHA256SUMS)
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: |
+            release-assets/wow-markets-companion-macos-arm64.dmg
+            release-assets/wow-markets-companion-windows-amd64-setup.exe
+            release-assets/wow-markets-companion-macos-arm64.spdx.json
+            release-assets/wow-markets-companion-windows-amd64.spdx.json
+            release-assets/SHA256SUMS
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f # v3
+        with:
+          subject-path: release-assets/wow-markets-companion-macos-arm64.dmg
+          sbom-path: release-assets/wow-markets-companion-macos-arm64.spdx.json
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f # v3
+        with:
+          subject-path: release-assets/wow-markets-companion-windows-amd64-setup.exe
+          sbom-path: release-assets/wow-markets-companion-windows-amd64.spdx.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: companion-release-${{ needs.validate.outputs.version }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 14
+      - name: Create draft release
+        if: inputs.create_draft_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          Release candidate for inspection only. Do not publish until the
+          companion updater has completed the Phase 4 platform update gates.
+
+          The Windows installer is not Authenticode-signed and will display an
+          Unknown Publisher/SmartScreen warning. Verify SHA256SUMS and GitHub
+          attestations before installation.
+          NOTES
+          prerelease=
+          case "$VERSION" in *-*) prerelease=--prerelease ;; esac
+          gh release create "companion-v$VERSION" release-assets/* \
+            --draft $prerelease \
+            --target "$GITHUB_SHA" \
+            --title "WoW Markets Companion $VERSION" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

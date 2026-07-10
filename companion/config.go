@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,8 +16,10 @@ const (
 	configDirName               = "WoWMarkets"
 	legacyConfigDirName         = "WowMarketScan"
 	configFileName              = "config.json"
-	companionVersion            = "1.0.0"
 )
+
+//go:embed wails.json
+var wailsConfigJSON []byte
 
 // Official release workflows inject both values with -ldflags. Development
 // builds default to loopback and can select another service explicitly through
@@ -29,6 +32,22 @@ var (
 type serviceEndpoints struct {
 	APIURL           string
 	InstallationsURL string
+}
+
+func companionVersion() string {
+	var config struct {
+		Info struct {
+			ProductVersion string `json:"productVersion"`
+		} `json:"info"`
+	}
+	if err := json.Unmarshal(wailsConfigJSON, &config); err != nil {
+		panic(fmt.Sprintf("decode embedded wails.json: %v", err))
+	}
+	version := strings.TrimSpace(config.Info.ProductVersion)
+	if version == "" {
+		panic("wails.json info.productVersion is required")
+	}
+	return version
 }
 
 func configuredServiceEndpoints() serviceEndpoints {

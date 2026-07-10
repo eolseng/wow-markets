@@ -866,7 +866,7 @@ func (app *App) snapshotLocked() Snapshot {
 		UploadedCount:          app.uploadedCount,
 		UploadingCount:         app.uploadingCount,
 		UploadFailure:          cloneScanSummary(app.uploadFailure),
-		Version:                companionVersion,
+		Version:                companionVersion(),
 		WowDetected:            app.wowDetected,
 		WowInstallPath:         app.config.WowInstallPath,
 	}

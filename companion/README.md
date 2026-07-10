@@ -80,8 +80,9 @@ lock prevents duplicate watchers.
 
 The `Companion Build` workflow builds the macOS arm64 app and Windows x64
 executable. macOS builds use Developer ID signing and notarization when secrets
-are configured, otherwise ad-hoc signing. Release artifacts use the
-`wow-markets-companion-*` name.
+are configured, otherwise ad-hoc signing. The macOS artifact is a disk image
+containing `WoW Markets Companion.app` and an Applications link for drag-and-drop
+installation. Release artifacts use the `wow-markets-companion-*` name.
 
 ## Manual smoke test
 

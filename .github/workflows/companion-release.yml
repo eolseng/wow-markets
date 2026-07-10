@@ -113,18 +113,18 @@ jobs:
           ldflags="-X main.officialAPIURL=$PRODUCTION_API_URL -X main.officialInstallationsURL=$INSTALLATIONS_URL"
           go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build \
             -clean -platform darwin/arm64 -ldflags "$ldflags"
-      - name: Sign, package, and notarize
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Sign and package
         run: |
+          echo "Locating the app bundle"
           app_path=$(find companion/build/bin -maxdepth 1 -type d -name '*.app' -print)
           test $(printf '%s\n' "$app_path" | grep -c .) -eq 1
+
+          echo "Signing the app bundle"
           codesign --force --deep --options runtime --timestamp \
             --sign "$APPLE_CODESIGN_IDENTITY" "$app_path"
           codesign --verify --deep --strict --verbose=2 "$app_path"
 
+          echo "Creating and signing the DMG"
           mkdir -p companion/dist "$RUNNER_TEMP/dmg/WoW Markets Companion"
           ditto "$app_path" "$RUNNER_TEMP/dmg/WoW Markets Companion/WoW Markets Companion.app"
           ln -s /Applications "$RUNNER_TEMP/dmg/WoW Markets Companion/Applications"
@@ -134,13 +134,51 @@ jobs:
             -ov -format UDZO "$dmg_path"
           codesign --force --timestamp --sign "$APPLE_CODESIGN_IDENTITY" "$dmg_path"
           codesign --verify --strict --verbose=2 "$dmg_path"
-          xcrun notarytool submit "$dmg_path" \
+
+      - id: notarization
+        name: Submit for notarization
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "Uploading the signed DMG to Apple's notary service"
+          response=$(xcrun notarytool submit \
+            companion/dist/wow-markets-companion-macos-arm64.dmg \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --no-wait \
+            --no-progress \
+            --output-format json)
+          printf '%s\n' "$response"
+          submission_id=$(printf '%s' "$response" | \
+            python3 -c 'import json, sys; print(json.load(sys.stdin)["id"])')
+          test -n "$submission_id"
+          echo "Notarization submission ID: $submission_id"
+          echo "submission_id=$submission_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for notarization
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SUBMISSION_ID: ${{ steps.notarization.outputs.submission_id }}
+        run: |
+          echo "Waiting for notarization submission $SUBMISSION_ID"
+          xcrun notarytool wait "$SUBMISSION_ID" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --timeout 30m
+
+      - name: Staple and verify notarization
+        run: |
+          dmg_path=companion/dist/wow-markets-companion-macos-arm64.dmg
+          echo "Stapling the notarization ticket"
           xcrun stapler staple "$dmg_path"
           xcrun stapler validate "$dmg_path"
+          app_path=$(find companion/build/bin -maxdepth 1 -type d -name '*.app' -print)
           spctl --assess --type execute --verbose=2 "$app_path"
           hdiutil verify "$dmg_path"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg_path"

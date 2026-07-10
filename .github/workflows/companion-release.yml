@@ -136,7 +136,7 @@ jobs:
           ditto "$framework_root/Sparkle.framework" "$app_path/Contents/Frameworks/Sparkle.framework"
           mkdir -p "$app_path/Contents/Resources/ThirdParty"
           cp companion/third_party/sparkle/LICENSE "$app_path/Contents/Resources/ThirdParty/Sparkle-LICENSE"
-          lipo -verify_arch arm64 "$app_path/Contents/Frameworks/Sparkle.framework/Sparkle"
+          lipo "$app_path/Contents/Frameworks/Sparkle.framework/Sparkle" -verify_arch arm64
       - name: Sign and package
         run: |
           echo "Locating the app bundle"

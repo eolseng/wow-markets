@@ -82,7 +82,9 @@ The `Companion Build` workflow builds the macOS arm64 app and Windows x64
 executable. macOS builds use Developer ID signing and notarization when secrets
 are configured, otherwise ad-hoc signing. The macOS artifact is a disk image
 containing `WoW Markets Companion.app` and an Applications link for drag-and-drop
-installation. Release artifacts use the `wow-markets-companion-*` name.
+installation. The Windows artifact is an unsigned Wails NSIS installer that
+installs the app in Program Files and registers an uninstaller. Release artifacts
+use the `wow-markets-companion-*` name.
 
 ## Manual smoke test
 
@@ -100,3 +102,6 @@ installation. Release artifacts use the `wow-markets-companion-*` name.
 5. Close and restore the window from the tray/menu bar.
 6. Enable and disable Start at login, then verify a login launch in a disposable
    OS account or VM.
+7. On Windows, run the NSIS setup executable, verify the Program Files install,
+   shortcuts, and Apps & features entry, then uninstall it and confirm companion
+   data remains available for a later reinstall.

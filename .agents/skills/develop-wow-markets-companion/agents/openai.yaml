@@ -1,0 +1,4 @@
+interface:
+  display_name: "Develop WoW Markets Companion"
+  short_description: "Build and verify the Wails companion app"
+  default_prompt: "Use $develop-wow-markets-companion to implement and verify a companion app change."

@@ -21,9 +21,11 @@ type App struct {
 	mu      sync.Mutex
 	setupMu sync.Mutex
 
-	ctx         context.Context
-	windowShown bool
-	quitting    bool
+	ctx              context.Context
+	apiURL           string
+	installationsURL string
+	windowShown      bool
+	quitting         bool
 
 	initializing   bool
 	startupPhase   string
@@ -66,10 +68,13 @@ type App struct {
 }
 
 func NewApp() *App {
+	endpoints := configuredServiceEndpoints()
 	return &App{
-		initializing: true,
-		startupPhase: "Starting WoW Markets Companion",
-		windowShown:  !launchedInBackground(),
+		initializing:     true,
+		startupPhase:     "Starting WoW Markets Companion",
+		windowShown:      !launchedInBackground(),
+		apiURL:           endpoints.APIURL,
+		installationsURL: endpoints.InstallationsURL,
 	}
 }
 
@@ -514,7 +519,7 @@ func (app *App) OpenInstallationsPage() error {
 	if ctx == nil {
 		return errors.New("application is not ready")
 	}
-	runtime.BrowserOpenURL(ctx, installationsPageURL)
+	runtime.BrowserOpenURL(ctx, app.installationsURL)
 	return nil
 }
 
@@ -555,6 +560,7 @@ func (app *App) startWatcher() (Snapshot, error) {
 	config := app.config
 	token := app.token
 	dataDir := app.dataDir
+	apiURL := app.apiURL
 	if app.initializing || app.quitting || !ready || dataDir == "" {
 		snapshot := app.snapshotLocked()
 		app.mu.Unlock()
@@ -574,7 +580,7 @@ func (app *App) startWatcher() (Snapshot, error) {
 	go func() {
 		defer close(done)
 		err := watchagent.Run(ctx, watchagent.Config{
-			APIURL:        productionAPIURL,
+			APIURL:        apiURL,
 			APIToken:      token,
 			DataDir:       dataDir,
 			FilePath:      config.ScanFilePath,
@@ -824,7 +830,7 @@ func (app *App) emitSnapshot() {
 func (app *App) snapshotLocked() Snapshot {
 	ready := app.readyLocked()
 	return Snapshot{
-		APIURL:                 productionAPIURL,
+		APIURL:                 app.apiURL,
 		ActivityKind:           app.activityKind,
 		AddonDetected:          app.addonDetected,
 		AddonPath:              app.addonPath,
@@ -837,7 +843,7 @@ func (app *App) snapshotLocked() Snapshot {
 		TokenStored:            app.token != "",
 		FailedCount:            app.failedCount,
 		Initializing:           app.initializing,
-		InstallationsURL:       installationsPageURL,
+		InstallationsURL:       app.installationsURL,
 		LastArchiveAt:          app.lastArchiveAt,
 		LastDetected:           cloneScanSummary(app.lastDetected),
 		LastError:              app.lastError,

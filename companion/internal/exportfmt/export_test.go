@@ -1,6 +1,7 @@
 package exportfmt
 
 import (
+	"bytes"
 	"os"
 	"strings"
 	"testing"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestDecodeCurrentFixture(t *testing.T) {
-	database := loadFixture(t, "../../testdata/WoWMarkets.lua")
+	database := loadFixture(t, "../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if len(database.Scans) != 1 {
 		t.Fatalf("len(Scans) = %d, want 1", len(database.Scans))
 	}
@@ -61,8 +62,23 @@ func TestDecodeCurrentFixture(t *testing.T) {
 	}
 }
 
+func TestCanonicalJSONMatchesPublicFixture(t *testing.T) {
+	scan := loadFixture(t, "../../../contracts/saved-variables/v5/fixtures/valid.lua").Scans[0]
+	actual, err := scan.CanonicalJSON()
+	if err != nil {
+		t.Fatalf("CanonicalJSON() error = %v", err)
+	}
+	expected, err := os.ReadFile("../../../contracts/scan-archive/v1/fixtures/valid.json")
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !bytes.Equal(actual, expected) {
+		t.Fatal("canonical JSON differs from public fixture")
+	}
+}
+
 func TestDecodeRejectsPreviousFormat(t *testing.T) {
-	payload, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	payload, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
@@ -85,7 +101,7 @@ func TestDecodeRejectsPreviousFormat(t *testing.T) {
 }
 
 func TestValidateRejectsAuctionHouseLocationMismatch(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
+	scan := loadFixture(t, "../../../contracts/saved-variables/v5/fixtures/valid.lua").Scans[0]
 	scan.AuctionHouse = "neutral"
 	if err := scan.Validate(); err == nil {
 		t.Fatal("Validate() accepted a neutral AH outside a neutral zone")
@@ -93,7 +109,7 @@ func TestValidateRejectsAuctionHouseLocationMismatch(t *testing.T) {
 }
 
 func TestValidateAcceptsNeutralAuctionHouseLocation(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
+	scan := loadFixture(t, "../../../contracts/saved-variables/v5/fixtures/valid.lua").Scans[0]
 	scan.AuctionHouse = "neutral"
 	scan.CaptureZone = "Tanaris"
 	scan.CaptureSubzone = "Gadgetzan"
@@ -104,7 +120,7 @@ func TestValidateAcceptsNeutralAuctionHouseLocation(t *testing.T) {
 }
 
 func TestValidateRejectsDuplicateSourceRows(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
+	scan := loadFixture(t, "../../../contracts/saved-variables/v5/fixtures/valid.lua").Scans[0]
 	scan.Rows[1].SourceRow = scan.Rows[0].SourceRow
 	if err := scan.Validate(); err == nil {
 		t.Fatal("Validate() accepted duplicate source rows")

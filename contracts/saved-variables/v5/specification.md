@@ -157,9 +157,17 @@ API rejects truncated uploads outright.
 
 ## Compatibility policy
 
-During early development, the addon, local tools, API, and database support
-only the current contract. Format changes update every component together;
-older development captures are not guaranteed to remain replayable.
+Public distribution requires an explicit support window. A breaking successor
+format is introduced in this order:
+
+1. Deploy service support for both the current and successor formats.
+2. Release a companion that accepts both formats.
+3. Release an addon that emits the successor format.
+4. Observe adoption and failed uploads.
+5. Retire the old format only after a documented support window.
+
+Canonical bytes, checksums, SavedVariables identity, and discovery paths must
+not change without coordinated public fixtures and service consumer tests.
 
 WoW Markets Companion accepts the former `WowMarketScan.lua` file containing
 `WOW_MARKET_SCAN_DB` as a migration input. New addon captures use only

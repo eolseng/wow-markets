@@ -11,6 +11,8 @@ The service API and website are maintained separately and are not part of this
 repository. Start with the [addon guide](addon/README.md), the
 [companion guide](companion/README.md), or [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Public client contracts and golden fixtures live under [`contracts/`](contracts/).
+
 ## Verify
 
 Install Go 1.26.4, Node.js 24, and Lua 5.1, then run:
@@ -19,9 +21,10 @@ Install Go 1.26.4, Node.js 24, and Lua 5.1, then run:
 make check
 ```
 
-The current companion development configuration targets production. Do not use
-fixtures or synthetic scans with it. A safe upload-disabled/local development
-mode is required before the repository is opened for external contributions.
+Development companion builds target loopback services by default. Set
+`WOW_MARKETS_API_URL` and `WOW_MARKETS_INSTALLATIONS_URL` explicitly to use a
+different local test environment. Never upload fixtures or synthetic scans to
+production.
 
 ## Privacy and security
 

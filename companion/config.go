@@ -10,13 +10,48 @@ import (
 )
 
 const (
-	productionAPIURL     = "https://api.wowmarkets.app"
-	installationsPageURL = "https://wowmarkets.app/account/installations"
-	configDirName        = "WoWMarkets"
-	legacyConfigDirName  = "WowMarketScan"
-	configFileName       = "config.json"
-	companionVersion     = "1.0.0"
+	developmentAPIURL           = "http://127.0.0.1:8787"
+	developmentInstallationsURL = "http://127.0.0.1:3000/account/installations"
+	configDirName               = "WoWMarkets"
+	legacyConfigDirName         = "WowMarketScan"
+	configFileName              = "config.json"
+	companionVersion            = "1.0.0"
 )
+
+// Official release workflows inject both values with -ldflags. Development
+// builds default to loopback and can select another service explicitly through
+// the environment.
+var (
+	officialAPIURL           string
+	officialInstallationsURL string
+)
+
+type serviceEndpoints struct {
+	APIURL           string
+	InstallationsURL string
+}
+
+func configuredServiceEndpoints() serviceEndpoints {
+	if strings.TrimSpace(officialAPIURL) != "" &&
+		strings.TrimSpace(officialInstallationsURL) != "" {
+		return serviceEndpoints{
+			APIURL:           strings.TrimRight(strings.TrimSpace(officialAPIURL), "/"),
+			InstallationsURL: strings.TrimSpace(officialInstallationsURL),
+		}
+	}
+	apiURL := strings.TrimSpace(os.Getenv("WOW_MARKETS_API_URL"))
+	if apiURL == "" {
+		apiURL = developmentAPIURL
+	}
+	installationsURL := strings.TrimSpace(os.Getenv("WOW_MARKETS_INSTALLATIONS_URL"))
+	if installationsURL == "" {
+		installationsURL = developmentInstallationsURL
+	}
+	return serviceEndpoints{
+		APIURL:           strings.TrimRight(apiURL, "/"),
+		InstallationsURL: installationsURL,
+	}
+}
 
 type companionConfig struct {
 	// Email and InstallationName are retained so pre-1.0 config files continue

@@ -8,7 +8,7 @@ description: Implement, debug, review, and verify the WoW Markets addon. Use for
 ## Establish context
 
 1. Read `AGENTS.md` at the repository root and `addon/README.md`.
-2. Read `docs/formats/saved-variables.md` before changing the envelope or scan
+2. Read `contracts/saved-variables/v5/specification.md` before changing the envelope or scan
    fields. Read `docs/client-architecture.md` when changing the
    Auctionator integration or capture lifecycle.
 3. Treat `refs/Auctionator` and `data/` as read-only local context. Inspect the
@@ -55,7 +55,7 @@ description: Implement, debug, review, and verify the WoW Markets addon. Use for
 ## Protect cross-package contracts
 
 - Scan format 5 is shared by addon, companion, the service API, fixtures, and
-  `docs/formats/saved-variables.md`. Coordinate all affected packages when its
+  `contracts/saved-variables/v5/specification.md`. Coordinate all affected packages when its
   fields or semantics change.
 - Preserve byte-stable canonical archive behavior downstream. An envelope or
   filename migration must not silently alter scan contents or checksums.

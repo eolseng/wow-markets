@@ -11,7 +11,7 @@ and the full token is stored in macOS Keychain or Windows Credential Manager.
 ## Run and verify
 
 ```sh
-make companion        # Wails dev; talks to the production API
+make companion        # Wails dev; targets loopback services by default
 make companion-check  # formatting, frontend tests, Go tests, and build
 make companion-build  # package to companion/build/bin
 ```
@@ -20,6 +20,13 @@ The Go module root is `companion/`. `frontend/dist/` is hand-written vanilla
 HTML, CSS, and JavaScript; there is no npm dependency or bundler step. The UI
 uses Wails bindings at `window.go.main.App`, listens for lifecycle snapshots,
 and retains polling as a recovery path.
+
+Development defaults to `http://127.0.0.1:8787` for the API and
+`http://127.0.0.1:3000/account/installations` for token management. Override
+them explicitly with `WOW_MARKETS_API_URL` and
+`WOW_MARKETS_INSTALLATIONS_URL`. Official builds inject the production origins
+through Go linker values; release workflows must set both
+`main.officialAPIURL` and `main.officialInstallationsURL`.
 
 ## Startup and onboarding
 
@@ -96,7 +103,8 @@ name.
    is displayed afterward.
 3. Exercise missing WoW folder, missing addon, and missing SavedVariables in
    turn; confirm each has distinct guidance.
-4. Using a legitimate scan in a disposable production-linked OS account, run
+4. Using a legitimate scan in a disposable production-linked OS account and an
+   official build (or explicit production URL overrides), run
    `/reload` and confirm automatic detection, detected/uploading/success states,
    and row/item data. Never upload fixtures or synthetic scans: development
    builds target the production API, while automated upload coverage uses local

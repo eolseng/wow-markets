@@ -146,7 +146,7 @@ func TestInspectInstallRejectsInvalidRoot(t *testing.T) {
 
 func TestDiscoverAnniversaryScanFilesAcceptsLegacyFile(t *testing.T) {
 	root := t.TempDir()
-	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	fixture, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("read scan fixture: %v", err)
 	}
@@ -182,7 +182,7 @@ func TestDiscoverAnniversaryScanFilesAcceptsLegacyFile(t *testing.T) {
 func TestDiscoverAnniversaryScanFilesPrefersCurrentFileForSameAccount(t *testing.T) {
 	root := t.TempDir()
 	current := writeValidScan(t, root, "ACCOUNT")
-	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	fixture, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("read scan fixture: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestInspectInstallRequiresCurrentScanFileWithCurrentAddon(t *testing.T) {
 	if err := os.WriteFile(marker, []byte("## Interface: 20505\n"), 0o644); err != nil {
 		t.Fatalf("write addon marker: %v", err)
 	}
-	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	fixture, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("read scan fixture: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestFindInstallRootAcceptsLegacyEnvironmentVariable(t *testing.T) {
 
 func writeValidScan(t *testing.T, root, account string) string {
 	t.Helper()
-	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	fixture, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("read scan fixture: %v", err)
 	}

@@ -15,7 +15,7 @@ func TestLoadArchiveValidatesChecksumFilename(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	results, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
+	results, err := processor.ProcessFile("../../../contracts/saved-variables/v5/fixtures/valid.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}
@@ -41,6 +41,23 @@ func TestLoadArchiveValidatesChecksumFilename(t *testing.T) {
 	}
 	if _, _, err := LoadArchive(mismatchedPath); err == nil {
 		t.Fatal("LoadArchive() accepted a mismatched checksum filename")
+	}
+}
+
+func TestPublicGzipFixtureMatchesCanonicalPayload(t *testing.T) {
+	payload, err := ReadArchive("../../../contracts/scan-archive/v1/fixtures/valid.json.gz")
+	if err != nil {
+		t.Fatalf("ReadArchive() error = %v", err)
+	}
+	expected, err := os.ReadFile("../../../contracts/scan-archive/v1/fixtures/valid.json")
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !bytes.Equal(payload, expected) {
+		t.Fatal("gzip fixture does not contain the canonical JSON fixture")
+	}
+	if _, _, err := DecodePayload(payload); err != nil {
+		t.Fatalf("DecodePayload() error = %v", err)
 	}
 }
 
@@ -95,7 +112,7 @@ func createFixtureArchive(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	results, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
+	results, err := processor.ProcessFile("../../../contracts/saved-variables/v5/fixtures/valid.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}

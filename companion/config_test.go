@@ -6,6 +6,62 @@ import (
 	"testing"
 )
 
+func TestConfiguredServiceEndpointsDefaultToLoopback(t *testing.T) {
+	t.Setenv("WOW_MARKETS_API_URL", "")
+	t.Setenv("WOW_MARKETS_INSTALLATIONS_URL", "")
+	previousAPIURL := officialAPIURL
+	previousInstallationsURL := officialInstallationsURL
+	officialAPIURL = ""
+	officialInstallationsURL = ""
+	t.Cleanup(func() {
+		officialAPIURL = previousAPIURL
+		officialInstallationsURL = previousInstallationsURL
+	})
+
+	actual := configuredServiceEndpoints()
+	if actual.APIURL != developmentAPIURL || actual.InstallationsURL != developmentInstallationsURL {
+		t.Fatalf("configuredServiceEndpoints() = %#v", actual)
+	}
+}
+
+func TestConfiguredServiceEndpointsRequireExplicitDevelopmentOverride(t *testing.T) {
+	t.Setenv("WOW_MARKETS_API_URL", "https://example.invalid/")
+	t.Setenv("WOW_MARKETS_INSTALLATIONS_URL", "https://example.invalid/installations")
+	previousAPIURL := officialAPIURL
+	previousInstallationsURL := officialInstallationsURL
+	officialAPIURL = ""
+	officialInstallationsURL = ""
+	t.Cleanup(func() {
+		officialAPIURL = previousAPIURL
+		officialInstallationsURL = previousInstallationsURL
+	})
+
+	actual := configuredServiceEndpoints()
+	if actual.APIURL != "https://example.invalid" ||
+		actual.InstallationsURL != "https://example.invalid/installations" {
+		t.Fatalf("configuredServiceEndpoints() = %#v", actual)
+	}
+}
+
+func TestConfiguredServiceEndpointsPreferOfficialBuildValues(t *testing.T) {
+	t.Setenv("WOW_MARKETS_API_URL", "https://ignored.invalid")
+	t.Setenv("WOW_MARKETS_INSTALLATIONS_URL", "https://ignored.invalid/installations")
+	previousAPIURL := officialAPIURL
+	previousInstallationsURL := officialInstallationsURL
+	officialAPIURL = "https://api.wowmarkets.app/"
+	officialInstallationsURL = "https://wowmarkets.app/account/installations"
+	t.Cleanup(func() {
+		officialAPIURL = previousAPIURL
+		officialInstallationsURL = previousInstallationsURL
+	})
+
+	actual := configuredServiceEndpoints()
+	if actual.APIURL != "https://api.wowmarkets.app" ||
+		actual.InstallationsURL != "https://wowmarkets.app/account/installations" {
+		t.Fatalf("configuredServiceEndpoints() = %#v", actual)
+	}
+}
+
 func TestMigrateCompanionConfigDir(t *testing.T) {
 	root := t.TempDir()
 	legacy := filepath.Join(root, legacyConfigDirName)

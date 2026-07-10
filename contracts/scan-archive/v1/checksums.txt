@@ -1,0 +1,2 @@
+ab00198434ed302516bf1ff5011da542737e1c2b6e1fed348a4ebd982781139d  fixtures/valid.json
+3d6eb6295bcb264365afd2230e5293ff0f4f1e13fae04dfb93c26d4b0a0d138a  fixtures/valid.json.gz

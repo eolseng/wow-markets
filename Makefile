@@ -1,8 +1,11 @@
 WAILS := go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 
-.PHONY: check addon-check companion companion-build companion-check fmt
+.PHONY: check addon-check companion companion-build companion-check contract-check fmt
 
-check: addon-check companion-check
+check: contract-check addon-check companion-check
+
+contract-check:
+	cd contracts/scan-archive/v1 && shasum -a 256 -c checksums.txt
 
 addon-check:
 	@LUA_BIN="$$(command -v lua5.1 || command -v luajit || command -v lua)"; \

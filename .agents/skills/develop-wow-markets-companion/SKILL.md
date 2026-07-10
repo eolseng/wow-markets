@@ -9,7 +9,7 @@ description: Implement, debug, review, and verify the WoW Markets Companion desk
 
 1. Read `AGENTS.md` at the repository root and `companion/AGENTS.md`.
 2. Read only the package and contract docs touched by the request. Read
-   `docs/formats/saved-variables.md` before changing scan formats. Public API
+   `contracts/saved-variables/v5/specification.md` before changing scan formats. Public API
    contract documentation must remain sufficient for client changes without a
    private service checkout.
 3. Treat `companion/frontend/dist/` as authored source. Do not introduce a
@@ -54,8 +54,9 @@ description: Implement, debug, review, and verify the WoW Markets Companion desk
   launched. Preserve show and quit requests received before Wails startup.
 - Keep the user-visible name exactly `WoW Markets Companion` across Wails,
   frontend, tray/menu strings, CI paths, and release metadata.
-- Remember that local development targets the production API. Use `httptest`
-  and fixtures; do not send verification scans to production.
+- Local development targets loopback services by default. Use `httptest` and
+  fixtures; do not send verification scans to production. Production origins
+  belong only in explicit overrides or official linker-injected builds.
 
 ## Verify
 

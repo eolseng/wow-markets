@@ -8,7 +8,7 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	database, err := Load("../../testdata/WoWMarkets.lua", "")
+	database, err := Load("../../../contracts/saved-variables/v5/fixtures/valid.lua", "")
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
@@ -21,7 +21,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadFallsBackToLegacyVariable(t *testing.T) {
-	payload, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	payload, err := os.ReadFile("../../../contracts/saved-variables/v5/fixtures/valid.lua")
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}

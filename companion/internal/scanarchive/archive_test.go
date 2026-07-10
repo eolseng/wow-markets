@@ -20,7 +20,7 @@ func TestProcessFileArchivesOnce(t *testing.T) {
 		return time.Date(2026, 6, 13, 12, 0, 0, 0, time.UTC)
 	}
 
-	first, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
+	first, err := processor.ProcessFile("../../../contracts/saved-variables/v5/fixtures/valid.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}
@@ -28,7 +28,7 @@ func TestProcessFileArchivesOnce(t *testing.T) {
 		t.Fatalf("first results = %#v", first)
 	}
 
-	second, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
+	second, err := processor.ProcessFile("../../../contracts/saved-variables/v5/fixtures/valid.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() second error = %v", err)
 	}

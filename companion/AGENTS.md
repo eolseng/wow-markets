@@ -10,7 +10,7 @@ it vanilla HTML/CSS/ES modules with no bundler.
 - Focused Go: `cd companion && go test ./...`.
 - Frontend: `node --check frontend/dist/app.js` and
   `node --test frontend/view-model.test.mjs`.
-- Package: `make companion-build` (the app always targets the production API).
+- Package: `make companion-build` (development builds target loopback).
 
 ## Product invariants
 
@@ -24,7 +24,7 @@ it vanilla HTML/CSS/ES modules with no bundler.
 - Treat WoW files and `refs/` as read-only. Never modify SavedVariables.
 - Canonical scan JSON/checksums are cross-package contracts. Do not change
   archive serialization without coordinating addon, companion, API, and
-  `docs/formats/saved-variables.md`.
+  `contracts/saved-variables/v5/specification.md`.
 - Derive upload counts and current/recent scan details from persisted archive
   and queue state, not process-local counters. Emit lifecycle progress before
   network uploads so the UI can show active work.
@@ -41,3 +41,6 @@ it vanilla HTML/CSS/ES modules with no bundler.
 - Launch-at-login code is split by build tags. Never mutate the real login
   configuration in tests; test payload/command construction instead.
 - Keep CI package paths aligned with `wails.json` when renaming build output.
+- Official release builds must inject both production service origins through
+  `main.officialAPIURL` and `main.officialInstallationsURL`. Do not change the
+  loopback development defaults to production.

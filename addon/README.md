@@ -15,7 +15,7 @@ World of Warcraft/_anniversary_/WTF/Account/<ACCOUNT>/SavedVariables/WoWMarkets.
 ```
 
 The record layout is documented in
-[docs/formats/saved-variables.md](../docs/formats/saved-variables.md).
+[contracts/saved-variables/v5/specification.md](../contracts/saved-variables/v5/specification.md).
 
 ## Upgrade from WowMarketScan
 

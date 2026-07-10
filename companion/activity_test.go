@@ -19,7 +19,7 @@ func TestLoadActivityOverviewTracksPersistedUploadLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("scanarchive.New() error = %v", err)
 	}
-	results, err := processor.ProcessFile(filepath.Join("testdata", "WoWMarkets.lua"), "")
+	results, err := processor.ProcessFile(filepath.Join("..", "contracts", "saved-variables", "v5", "fixtures", "valid.lua"), "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}
@@ -97,7 +97,7 @@ func TestLoadActivityOverviewKeepsAuthorizationFailureActionable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("scanarchive.New() error = %v", err)
 	}
-	results, err := processor.ProcessFile(filepath.Join("testdata", "WoWMarkets.lua"), "")
+	results, err := processor.ProcessFile(filepath.Join("..", "contracts", "saved-variables", "v5", "fixtures", "valid.lua"), "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}

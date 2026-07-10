@@ -15,7 +15,7 @@ func TestLoadArchiveValidatesChecksumFilename(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	results, err := processor.ProcessFile("../../testdata/WowMarketScan.lua", "")
+	results, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}
@@ -95,7 +95,7 @@ func createFixtureArchive(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	results, err := processor.ProcessFile("../../testdata/WowMarketScan.lua", "")
+	results, err := processor.ProcessFile("../../testdata/WoWMarkets.lua", "")
 	if err != nil {
 		t.Fatalf("ProcessFile() error = %v", err)
 	}

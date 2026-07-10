@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const addonMarkerRelativePath = "Interface/AddOns/WowMarketScan/WowMarketScan.toc"
+const addonMarkerRelativePath = "Interface/AddOns/WoWMarkets/WoWMarkets.toc"
 
 // InstallInspection describes the local pieces needed by the companion. A
 // missing Anniversary client, addon, or SavedVariables file is represented by
@@ -22,13 +22,15 @@ type InstallInspection struct {
 }
 
 // FindInstallRoot returns the first WoW root containing an Anniversary client.
-// A valid configured root wins over a root inferred from WOW_MARKET_SCAN_FILE
+// A valid configured root wins over a root inferred from WOW_MARKETS_SCAN_FILE
 // and the platform's standard install locations.
 func FindInstallRoot(configuredRoot string) (string, bool) {
 	roots := make([]string, 0, 2)
 	roots = append(roots, configuredRoot)
-	if environmentRoot := inferInstallRoot(os.Getenv("WOW_MARKET_SCAN_FILE")); environmentRoot != "" {
-		roots = append(roots, environmentRoot)
+	for _, scanPath := range environmentScanFiles() {
+		if environmentRoot := inferInstallRoot(scanPath); environmentRoot != "" {
+			roots = append(roots, environmentRoot)
+		}
 	}
 	roots = append(roots, candidateRoots()...)
 
@@ -96,7 +98,7 @@ func AnniversaryInstalled(root string) (bool, error) {
 	return directoryExists(path)
 }
 
-// AddonMarkerPath returns the expected WowMarketScan TOC path for a WoW root.
+// AddonMarkerPath returns the expected WoW Markets TOC path for a WoW root.
 func AddonMarkerPath(root string) string {
 	anniversaryPath := AnniversaryPath(root)
 	if anniversaryPath == "" {
@@ -105,7 +107,7 @@ func AddonMarkerPath(root string) string {
 	return filepath.Join(anniversaryPath, filepath.FromSlash(addonMarkerRelativePath))
 }
 
-// AddonInstalled reports whether the WowMarketScan TOC marker exists as a
+// AddonInstalled reports whether the WoW Markets TOC marker exists as a
 // file. A missing marker is not an error.
 func AddonInstalled(root string) (bool, error) {
 	path := AddonMarkerPath(root)

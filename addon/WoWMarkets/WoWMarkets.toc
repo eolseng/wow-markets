@@ -1,0 +1,10 @@
+## Interface: 20505
+## Title: WoW Markets
+## Notes: Contributes Auctionator full scans to WoW Markets.
+## Author: eolseng
+## Version: 0.5.0-dev
+## Dependencies: Auctionator
+## SavedVariables: WOW_MARKETS_DB
+
+Core.lua
+Capture.lua

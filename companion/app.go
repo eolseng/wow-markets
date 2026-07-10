@@ -380,7 +380,7 @@ func (app *App) SetWowFolder(path string) (Snapshot, error) {
 
 func (app *App) SetScanFile(path string) (Snapshot, error) {
 	path = filepath.Clean(path)
-	if _, err := scanfile.Load(path, scanfile.DefaultVariableName); err != nil {
+	if _, err := scanfile.Load(path, ""); err != nil {
 		app.setError(err)
 		return app.Snapshot(), err
 	}

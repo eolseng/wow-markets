@@ -8,7 +8,7 @@ import (
 func TestParseVariable(t *testing.T) {
 	input := `
 OTHER = { ["ignored"] = true }
-WOW_MARKET_SCAN_DB = {
+WOW_MARKETS_DB = {
   ["schemaVersion"] = 1,
   ["config"] = {
     ["maxExportRows"] = 100,
@@ -21,7 +21,7 @@ WOW_MARKET_SCAN_DB = {
 }
 `
 
-	root, err := ParseVariable(strings.NewReader(input), "WOW_MARKET_SCAN_DB")
+	root, err := ParseVariable(strings.NewReader(input), "WOW_MARKETS_DB")
 	if err != nil {
 		t.Fatalf("ParseVariable() error = %v", err)
 	}
@@ -44,9 +44,9 @@ WOW_MARKET_SCAN_DB = {
 }
 
 func TestParseVariableRejectsCode(t *testing.T) {
-	input := `WOW_MARKET_SCAN_DB = os.execute("echo unsafe")`
+	input := `WOW_MARKETS_DB = os.execute("echo unsafe")`
 
-	_, err := ParseVariable(strings.NewReader(input), "WOW_MARKET_SCAN_DB")
+	_, err := ParseVariable(strings.NewReader(input), "WOW_MARKETS_DB")
 	if err == nil {
 		t.Fatal("ParseVariable() accepted executable Lua")
 	}

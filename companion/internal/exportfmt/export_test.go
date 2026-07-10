@@ -9,7 +9,7 @@ import (
 )
 
 func TestDecodeCurrentFixture(t *testing.T) {
-	database := loadFixture(t, "../../testdata/WowMarketScan.lua")
+	database := loadFixture(t, "../../testdata/WoWMarkets.lua")
 	if len(database.Scans) != 1 {
 		t.Fatalf("len(Scans) = %d, want 1", len(database.Scans))
 	}
@@ -62,7 +62,7 @@ func TestDecodeCurrentFixture(t *testing.T) {
 }
 
 func TestDecodeRejectsPreviousFormat(t *testing.T) {
-	payload, err := os.ReadFile("../../testdata/WowMarketScan.lua")
+	payload, err := os.ReadFile("../../testdata/WoWMarkets.lua")
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
@@ -74,7 +74,7 @@ func TestDecodeRejectsPreviousFormat(t *testing.T) {
 	)
 	root, err := luasv.ParseVariable(
 		strings.NewReader(legacyPayload),
-		"WOW_MARKET_SCAN_DB",
+		"WOW_MARKETS_DB",
 	)
 	if err != nil {
 		t.Fatalf("ParseVariable() error = %v", err)
@@ -85,7 +85,7 @@ func TestDecodeRejectsPreviousFormat(t *testing.T) {
 }
 
 func TestValidateRejectsAuctionHouseLocationMismatch(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WowMarketScan.lua").Scans[0]
+	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
 	scan.AuctionHouse = "neutral"
 	if err := scan.Validate(); err == nil {
 		t.Fatal("Validate() accepted a neutral AH outside a neutral zone")
@@ -93,7 +93,7 @@ func TestValidateRejectsAuctionHouseLocationMismatch(t *testing.T) {
 }
 
 func TestValidateAcceptsNeutralAuctionHouseLocation(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WowMarketScan.lua").Scans[0]
+	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
 	scan.AuctionHouse = "neutral"
 	scan.CaptureZone = "Tanaris"
 	scan.CaptureSubzone = "Gadgetzan"
@@ -104,7 +104,7 @@ func TestValidateAcceptsNeutralAuctionHouseLocation(t *testing.T) {
 }
 
 func TestValidateRejectsDuplicateSourceRows(t *testing.T) {
-	scan := loadFixture(t, "../../testdata/WowMarketScan.lua").Scans[0]
+	scan := loadFixture(t, "../../testdata/WoWMarkets.lua").Scans[0]
 	scan.Rows[1].SourceRow = scan.Rows[0].SourceRow
 	if err := scan.Validate(); err == nil {
 		t.Fatal("Validate() accepted duplicate source rows")
@@ -120,7 +120,7 @@ func loadFixture(t *testing.T, path string) Database {
 	}
 	defer file.Close()
 
-	root, err := luasv.ParseVariable(file, "WOW_MARKET_SCAN_DB")
+	root, err := luasv.ParseVariable(file, "WOW_MARKETS_DB")
 	if err != nil {
 		t.Fatalf("ParseVariable() error = %v", err)
 	}

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/eolseng/wow-markets/companion/internal/scanarchive"
-	"github.com/eolseng/wow-markets/companion/internal/scanfile"
 	"github.com/eolseng/wow-markets/companion/internal/scanupload"
 )
 
@@ -55,9 +54,6 @@ type Event struct {
 }
 
 func Run(ctx context.Context, config Config, emit func(Event)) error {
-	if config.VariableName == "" {
-		config.VariableName = scanfile.DefaultVariableName
-	}
 	if config.Interval <= 0 {
 		config.Interval = 5 * time.Second
 	}

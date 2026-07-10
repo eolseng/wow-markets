@@ -1,6 +1,6 @@
-# WowMarketScan addon
+# WoW Markets addon
 
-`WowMarketScan` piggybacks on Auctionator (a required dependency) so
+WoW Markets piggybacks on Auctionator (a required dependency) so
 contributors never scan twice: when Auctionator's full scan completes, the
 addon compacts the payload in 250-row timer batches and appends a
 SavedVariables format 5 record — the game region and each unique item identity
@@ -11,33 +11,44 @@ The handoff to the companion app is the account-wide SavedVariables file,
 written when the client reloads its UI or exits normally:
 
 ```text
-World of Warcraft/_anniversary_/WTF/Account/<ACCOUNT>/SavedVariables/WowMarketScan.lua
+World of Warcraft/_anniversary_/WTF/Account/<ACCOUNT>/SavedVariables/WoWMarkets.lua
 ```
 
 The record layout is documented in
 [docs/formats/saved-variables.md](../docs/formats/saved-variables.md).
+
+## Upgrade from WowMarketScan
+
+Remove the old `Interface/AddOns/WowMarketScan` folder before installing
+`WoWMarkets`; leaving both installed loads two capture listeners. Restart WoW,
+run one fresh Auctionator full scan, and type `/reload`. WoW Markets Companion
+migrates its existing local archives and begins watching `WoWMarkets.lua`.
 
 ## Install for development
 
 Link the addon into the game installation:
 
 ```sh
-ln -s /absolute/path/to/addon/WowMarketScan \
-  "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WowMarketScan"
+ln -s /absolute/path/to/addon/WoWMarkets \
+  "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WoWMarkets"
 ```
 
 ## Slash commands
 
-- `/wms status` — capture progress and pending scan count.
-- `/wms location` — current zone, subzone, map ID, and Auction House
+- `/wm` or `/wm status` — capture progress, stored scan count, and whether the
+  latest scan needs `/reload`.
+- `/wm location` — current zone, subzone, map ID, and Auction House
   classification without scanning.
-- `/wms clear` — empty the pending scan queue.
+- `/wm clear` — request confirmation before emptying the stored scan queue.
+
+The former `/wms` command remains available as a compatibility alias.
 
 ## Behavior notes
 
-- The pending queue holds at most 3 scans; finishing a new capture silently
-  evicts the oldest. Upload regularly (keep the companion running) to avoid
-  losing scans.
+- The stored queue holds at most 3 scans. Finishing a new capture rotates out
+  the oldest; the addon reports the rotation and warns before another scan
+  would discard one captured during the current session. Keep the companion
+  running and type `/reload` after capturing so WoW writes the latest scan.
 - An in-progress capture lives only in memory; only `ready` scans reach
   SavedVariables. A new Auctionator scan is ignored while a capture is active,
   and a capture is dropped entirely if the game region cannot be determined.
@@ -50,3 +61,12 @@ ln -s /absolute/path/to/addon/WowMarketScan \
   purged at load.
 - Do not edit the SavedVariables file while the game client runs; the client
   overwrites external changes.
+
+## Verify
+
+With Lua 5.1 installed, run the mocked WoW runtime tests from the repository
+root:
+
+```sh
+make addon-check
+```

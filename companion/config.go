@@ -12,7 +12,8 @@ import (
 const (
 	productionAPIURL     = "https://api.wowmarkets.app"
 	installationsPageURL = "https://wowmarkets.app/account/installations"
-	configDirName        = "WowMarketScan"
+	configDirName        = "WoWMarkets"
+	legacyConfigDirName  = "WowMarketScan"
 	configFileName       = "config.json"
 	companionVersion     = "1.0.0"
 )
@@ -84,7 +85,30 @@ func companionConfigDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("locate user config directory: %w", err)
 	}
-	return filepath.Join(root, configDirName), nil
+	return migrateCompanionConfigDir(root)
+}
+
+func migrateCompanionConfigDir(root string) (string, error) {
+	current := filepath.Join(root, configDirName)
+	if _, err := os.Stat(current); err == nil {
+		return current, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("inspect config directory: %w", err)
+	}
+
+	legacy := filepath.Join(root, legacyConfigDirName)
+	if _, err := os.Stat(legacy); errors.Is(err, os.ErrNotExist) {
+		return current, nil
+	} else if err != nil {
+		return "", fmt.Errorf("inspect legacy config directory: %w", err)
+	}
+	if err := os.Rename(legacy, current); err != nil {
+		if _, currentErr := os.Stat(current); currentErr == nil {
+			return current, nil
+		}
+		return "", fmt.Errorf("migrate legacy config directory: %w", err)
+	}
+	return current, nil
 }
 
 func companionDataDir() (string, error) {

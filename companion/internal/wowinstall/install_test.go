@@ -3,8 +3,11 @@ package wowinstall
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/eolseng/wow-markets/companion/internal/scanfile"
 )
 
 func TestFindInstallRootPrefersConfiguredThenEnvironment(t *testing.T) {
@@ -14,7 +17,7 @@ func TestFindInstallRootPrefersConfiguredThenEnvironment(t *testing.T) {
 	mkdirAll(t, AnniversaryPath(environmentRoot))
 
 	environmentScan := scanPath(environmentRoot, "ENVIRONMENT")
-	t.Setenv("WOW_MARKET_SCAN_FILE", environmentScan)
+	t.Setenv(primaryScanFileEnv, environmentScan)
 
 	got, ok := FindInstallRoot(filepath.Join(configuredRoot, anniversaryFolder))
 	if !ok {
@@ -47,7 +50,7 @@ func TestInspectInstallRepresentsMissingComponentsWithoutErrors(t *testing.T) {
 	if inspection.AnniversaryPath != filepath.Join(root, anniversaryFolder) {
 		t.Fatalf("AnniversaryPath = %q", inspection.AnniversaryPath)
 	}
-	if inspection.AddonMarkerPath != filepath.Join(root, anniversaryFolder, "Interface", "AddOns", "WowMarketScan", "WowMarketScan.toc") {
+	if inspection.AddonMarkerPath != filepath.Join(root, anniversaryFolder, "Interface", "AddOns", "WoWMarkets", "WoWMarkets.toc") {
 		t.Fatalf("AddonMarkerPath = %q", inspection.AddonMarkerPath)
 	}
 
@@ -95,7 +98,7 @@ func TestDiscoverAnniversaryScanFilesInRootDoesNotSearchElsewhere(t *testing.T) 
 	otherRoot := t.TempDir()
 	selectedScan := writeValidScan(t, selectedRoot, "SELECTED")
 	otherScan := writeValidScan(t, otherRoot, "OTHER")
-	t.Setenv("WOW_MARKET_SCAN_FILE", otherScan)
+	t.Setenv(primaryScanFileEnv, otherScan)
 
 	candidates, err := DiscoverAnniversaryScanFilesInRoot(selectedRoot)
 	if err != nil {
@@ -118,7 +121,7 @@ func TestDiscoverAnniversaryScanFilesKeepsExplicitEnvironmentCandidateFirst(t *t
 	if err := os.Chtimes(environmentScan, now.Add(-time.Hour), now.Add(-time.Hour)); err != nil {
 		t.Fatalf("set environment scan time: %v", err)
 	}
-	t.Setenv("WOW_MARKET_SCAN_FILE", environmentScan)
+	t.Setenv(primaryScanFileEnv, environmentScan)
 
 	candidates, err := DiscoverAnniversaryScanFiles(root)
 	if err != nil {
@@ -141,9 +144,126 @@ func TestInspectInstallRejectsInvalidRoot(t *testing.T) {
 	}
 }
 
+func TestDiscoverAnniversaryScanFilesAcceptsLegacyFile(t *testing.T) {
+	root := t.TempDir()
+	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	if err != nil {
+		t.Fatalf("read scan fixture: %v", err)
+	}
+	legacyFixture := []byte(strings.Replace(
+		string(fixture),
+		scanfile.DefaultVariableName,
+		scanfile.LegacyVariableName,
+		1,
+	))
+	path := filepath.Join(
+		root,
+		anniversaryFolder,
+		"WTF",
+		"Account",
+		"LEGACY",
+		"SavedVariables",
+		legacyScanFileName,
+	)
+	mkdirAll(t, filepath.Dir(path))
+	if err := os.WriteFile(path, legacyFixture, 0o644); err != nil {
+		t.Fatalf("write legacy scan fixture: %v", err)
+	}
+
+	candidates, err := DiscoverAnniversaryScanFilesInRoot(root)
+	if err != nil {
+		t.Fatalf("DiscoverAnniversaryScanFilesInRoot() error = %v", err)
+	}
+	if len(candidates) != 1 || candidates[0].Path != path {
+		t.Fatalf("candidates = %+v, want legacy path %q", candidates, path)
+	}
+}
+
+func TestDiscoverAnniversaryScanFilesPrefersCurrentFileForSameAccount(t *testing.T) {
+	root := t.TempDir()
+	current := writeValidScan(t, root, "ACCOUNT")
+	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	if err != nil {
+		t.Fatalf("read scan fixture: %v", err)
+	}
+	legacyFixture := []byte(strings.Replace(
+		string(fixture),
+		scanfile.DefaultVariableName,
+		scanfile.LegacyVariableName,
+		1,
+	))
+	legacy := filepath.Join(filepath.Dir(current), legacyScanFileName)
+	if err := os.WriteFile(legacy, legacyFixture, 0o644); err != nil {
+		t.Fatalf("write legacy scan fixture: %v", err)
+	}
+	future := time.Now().Add(time.Hour)
+	if err := os.Chtimes(legacy, future, future); err != nil {
+		t.Fatalf("set legacy scan time: %v", err)
+	}
+
+	candidates, err := DiscoverAnniversaryScanFilesInRoot(root)
+	if err != nil {
+		t.Fatalf("DiscoverAnniversaryScanFilesInRoot() error = %v", err)
+	}
+	if len(candidates) != 1 || candidates[0].Path != current {
+		t.Fatalf("candidates = %+v, want current path %q", candidates, current)
+	}
+}
+
+func TestInspectInstallRequiresCurrentScanFileWithCurrentAddon(t *testing.T) {
+	root := t.TempDir()
+	marker := AddonMarkerPath(root)
+	mkdirAll(t, filepath.Dir(marker))
+	if err := os.WriteFile(marker, []byte("## Interface: 20505\n"), 0o644); err != nil {
+		t.Fatalf("write addon marker: %v", err)
+	}
+	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
+	if err != nil {
+		t.Fatalf("read scan fixture: %v", err)
+	}
+	legacyFixture := []byte(strings.Replace(
+		string(fixture),
+		scanfile.DefaultVariableName,
+		scanfile.LegacyVariableName,
+		1,
+	))
+	legacy := filepath.Join(
+		root,
+		anniversaryFolder,
+		"WTF",
+		"Account",
+		"ACCOUNT",
+		"SavedVariables",
+		legacyScanFileName,
+	)
+	mkdirAll(t, filepath.Dir(legacy))
+	if err := os.WriteFile(legacy, legacyFixture, 0o644); err != nil {
+		t.Fatalf("write legacy scan fixture: %v", err)
+	}
+
+	inspection, err := InspectInstall(root)
+	if err != nil {
+		t.Fatalf("InspectInstall() error = %v", err)
+	}
+	if !inspection.AddonPresent || len(inspection.ScanFiles) != 0 {
+		t.Fatalf("InspectInstall() = %+v, want addon without current scan file", inspection)
+	}
+}
+
+func TestFindInstallRootAcceptsLegacyEnvironmentVariable(t *testing.T) {
+	root := t.TempDir()
+	mkdirAll(t, AnniversaryPath(root))
+	t.Setenv(legacyScanFileEnv, scanPath(root, "LEGACY-ENV"))
+
+	got, ok := FindInstallRoot("")
+	if !ok || got != root {
+		t.Fatalf("FindInstallRoot() = %q, %v; want %q, true", got, ok, root)
+	}
+}
+
 func writeValidScan(t *testing.T, root, account string) string {
 	t.Helper()
-	fixture, err := os.ReadFile("../../testdata/WowMarketScan.lua")
+	fixture, err := os.ReadFile("../../testdata/WoWMarkets.lua")
 	if err != nil {
 		t.Fatalf("read scan fixture: %v", err)
 	}
@@ -156,7 +276,7 @@ func writeValidScan(t *testing.T, root, account string) string {
 }
 
 func scanPath(root, account string) string {
-	return filepath.Join(root, anniversaryFolder, "WTF", "Account", account, "SavedVariables", "WowMarketScan.lua")
+	return filepath.Join(root, anniversaryFolder, "WTF", "Account", account, "SavedVariables", primaryScanFileName)
 }
 
 func mkdirAll(t *testing.T, path string) {

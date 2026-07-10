@@ -1,4 +1,4 @@
-WOW_MARKET_SCAN_DB = {
+WOW_MARKETS_DB = {
   ["schemaVersion"] = 1,
   ["config"] = {
     ["maxPendingScans"] = 3,

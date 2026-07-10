@@ -28,9 +28,9 @@ one:
 
 1. An installation token is stored.
 2. a World of Warcraft installation with `_anniversary_` is detected.
-3. `_anniversary_/Interface/AddOns/WowMarketScan/WowMarketScan.toc` exists.
+3. `_anniversary_/Interface/AddOns/WoWMarkets/WoWMarkets.toc` exists.
 4. a parseable
-   `_anniversary_/WTF/Account/*/SavedVariables/WowMarketScan.lua` exists.
+   `_anniversary_/WTF/Account/*/SavedVariables/WoWMarkets.lua` exists.
 
 Incomplete setup is rechecked every three seconds. A correct installation with
 no SavedVariables is an expected state: run an Auctionator full scan, then
@@ -50,17 +50,18 @@ requeues scans that failed with HTTP 401 or 403.
 
 ## Local data and compatibility
 
-Application data remains under the legacy `WowMarketScan` config directory to
-preserve pre-1.0 archives and queues:
+Application data uses the `WoWMarkets` config directory:
 
-- macOS: `~/Library/Application Support/WowMarketScan`
-- Windows: `%AppData%/WowMarketScan`
+- macOS: `~/Library/Application Support/WoWMarkets`
+- Windows: `%AppData%/WoWMarkets`
 
 `config.json` stores non-secret paths and a token hint. `data/state.json` and
 `data/scans/*.json.gz` are the canonical local archive; `data/uploads.json` is
-the durable queue. The current credential-store service is
-`WoW Markets Companion`; an existing token under legacy service
-`Wow Market Scan` is migrated on first load.
+the durable queue. On first load, an existing `WowMarketScan` config directory
+is moved to the new location. The companion can also read the former
+`WowMarketScan.lua`/`WOW_MARKET_SCAN_DB` SavedVariables pair during migration.
+The current credential-store service is `WoW Markets Companion`; an existing
+token under legacy service `Wow Market Scan` is migrated on first load.
 
 ## Background operation
 

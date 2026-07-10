@@ -15,7 +15,7 @@ import (
 )
 
 func TestRunEmitsUploadLifecycleWithSafeScanMetadata(t *testing.T) {
-	scanPath := filepath.Join("..", "..", "testdata", "WowMarketScan.lua")
+	scanPath := filepath.Join("..", "..", "testdata", "WoWMarkets.lua")
 	database, err := scanfile.Load(scanPath, scanfile.DefaultVariableName)
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
@@ -135,11 +135,11 @@ func TestRunEmitsUploadLifecycleWithSafeScanMetadata(t *testing.T) {
 }
 
 func TestRunEmitsRecoveryAfterSavedVariablesBecomesReadable(t *testing.T) {
-	fixture, err := os.ReadFile(filepath.Join("..", "..", "testdata", "WowMarketScan.lua"))
+	fixture, err := os.ReadFile(filepath.Join("..", "..", "testdata", "WoWMarkets.lua"))
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	sourcePath := filepath.Join(t.TempDir(), "WowMarketScan.lua")
+	sourcePath := filepath.Join(t.TempDir(), "WoWMarkets.lua")
 	if err := os.WriteFile(sourcePath, []byte("invalid SavedVariables"), 0o600); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}

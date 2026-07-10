@@ -14,6 +14,13 @@ import (
 
 const anniversaryFolder = "_anniversary_"
 
+const (
+	primaryScanFileName = "WoWMarkets.lua"
+	legacyScanFileName  = "WowMarketScan.lua"
+	primaryScanFileEnv  = "WOW_MARKETS_SCAN_FILE"
+	legacyScanFileEnv   = "WOW_MARKET_SCAN_FILE"
+)
+
 type Candidate struct {
 	Account     string `json:"account"`
 	InstallPath string `json:"install_path"`
@@ -23,9 +30,11 @@ type Candidate struct {
 }
 
 func DiscoverAnniversaryScanFiles(extraRoots ...string) ([]Candidate, error) {
-	explicitCandidates := make([]Candidate, 0, 1)
-	if candidate, ok := validCandidate(os.Getenv("WOW_MARKET_SCAN_FILE"), ""); ok {
-		explicitCandidates = append(explicitCandidates, candidate)
+	explicitCandidates := make([]Candidate, 0, 2)
+	for _, path := range environmentScanFiles() {
+		if candidate, ok := validCandidate(path, ""); ok {
+			explicitCandidates = append(explicitCandidates, candidate)
+		}
 	}
 
 	candidates := make([]Candidate, 0)
@@ -61,17 +70,28 @@ func DiscoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
 }
 
 func discoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
-	matches, err := filepath.Glob(filepath.Join(
-		root,
-		anniversaryFolder,
-		"WTF",
-		"Account",
-		"*",
-		"SavedVariables",
-		"WowMarketScan.lua",
-	))
+	currentAddonInstalled, err := AddonInstalled(root)
 	if err != nil {
 		return nil, err
+	}
+	matches := make([]string, 0)
+	for _, fileName := range []string{primaryScanFileName, legacyScanFileName} {
+		if currentAddonInstalled && fileName == legacyScanFileName {
+			continue
+		}
+		fileMatches, err := filepath.Glob(filepath.Join(
+			root,
+			anniversaryFolder,
+			"WTF",
+			"Account",
+			"*",
+			"SavedVariables",
+			fileName,
+		))
+		if err != nil {
+			return nil, err
+		}
+		matches = append(matches, fileMatches...)
 	}
 
 	candidates := make([]Candidate, 0, len(matches))
@@ -82,11 +102,16 @@ func discoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
 		}
 	}
 	sort.SliceStable(candidates, func(i, j int) bool {
+		leftCurrent := filepath.Base(candidates[i].Path) == primaryScanFileName
+		rightCurrent := filepath.Base(candidates[j].Path) == primaryScanFileName
+		if leftCurrent != rightCurrent {
+			return leftCurrent
+		}
 		left, _ := time.Parse(time.RFC3339, candidates[i].ModifiedAt)
 		right, _ := time.Parse(time.RFC3339, candidates[j].ModifiedAt)
 		return left.After(right)
 	})
-	return dedupeCandidates(candidates), nil
+	return dedupeAccountCandidates(candidates), nil
 }
 
 func NormalizeInstallRoot(path string) string {
@@ -123,6 +148,13 @@ func candidateRoots() []string {
 	return dedupeStrings(roots)
 }
 
+func environmentScanFiles() []string {
+	return dedupeStrings([]string{
+		os.Getenv(primaryScanFileEnv),
+		os.Getenv(legacyScanFileEnv),
+	})
+}
+
 func validCandidate(path string, installRoot string) (Candidate, bool) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -132,7 +164,7 @@ func validCandidate(path string, installRoot string) (Candidate, bool) {
 	if err != nil || info.IsDir() {
 		return Candidate{}, false
 	}
-	if _, err := scanfile.Load(path, scanfile.DefaultVariableName); err != nil {
+	if _, err := scanfile.Load(path, ""); err != nil {
 		return Candidate{}, false
 	}
 	installRoot = NormalizeInstallRoot(installRoot)
@@ -185,6 +217,23 @@ func dedupeCandidates(candidates []Candidate) []Candidate {
 	return result
 }
 
+func dedupeAccountCandidates(candidates []Candidate) []Candidate {
+	seen := map[string]bool{}
+	result := make([]Candidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		key := strings.ToLower(candidate.Account)
+		if key == "" {
+			key = strings.ToLower(filepath.Clean(candidate.Path))
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, candidate)
+	}
+	return result
+}
+
 func dedupeStrings(values []string) []string {
 	seen := map[string]bool{}
 	result := make([]string, 0, len(values))
@@ -205,7 +254,7 @@ func BestAnniversaryScanFile() (Candidate, error) {
 		return Candidate{}, err
 	}
 	if len(candidates) == 0 {
-		return Candidate{}, errors.New("no WowMarketScan SavedVariables file found")
+		return Candidate{}, errors.New("no WoW Markets SavedVariables file found")
 	}
 	return candidates[0], nil
 }

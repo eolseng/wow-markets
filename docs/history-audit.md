@@ -27,6 +27,11 @@ The complete rewritten Git history was scanned with:
 The authored public agent guidance was scanned again before its commit and had
 zero Gitleaks findings.
 
+After publication files and the CodeQL permission guard were added, the full
+reachable history was scanned once more at `00c8705`: Gitleaks scanned 23
+commits (approximately 532 KB) with zero findings, and TruffleHog scanned 319
+chunks (approximately 537 KB) with zero verified or unverified findings.
+
 ## Validation
 
 - `git fsck --full` passed after filtering and before push.
@@ -37,5 +42,5 @@ zero Gitleaks findings.
 - Dependency and vendored-source results are recorded in
   [license-audit.md](license-audit.md).
 
-The audit covers source committed through `2b3b8cb`; later commits are governed
+The audit covers source committed through `00c8705`; later commits are governed
 by public pull-request checks and repository protections.

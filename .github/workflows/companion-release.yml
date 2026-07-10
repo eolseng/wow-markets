@@ -24,6 +24,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     outputs:
+      channel: ${{ steps.version.outputs.channel }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -47,6 +48,10 @@ jobs:
         run: |
           ./scripts/release/validate-version.sh companion "$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          case "$VERSION" in
+            *-*) echo "channel=beta" >> "$GITHUB_OUTPUT" ;;
+            *) echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+          esac
       - name: Verify client
         run: make check && make release-check
 
@@ -59,6 +64,7 @@ jobs:
     env:
       PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
       INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
+      UPDATE_ORIGIN: ${{ vars.UPDATE_ORIGIN }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -80,6 +86,7 @@ jobs:
         run: |
           test -n "$PRODUCTION_API_URL"
           test -n "$INSTALLATIONS_URL"
+          test "$UPDATE_ORIGIN" = "https://updates.wowmarkets.app"
           test -n "$APPLE_CERTIFICATE"
           test -n "$APPLE_CERTIFICATE_PASSWORD"
           test -n "$APPLE_ID"
@@ -110,9 +117,26 @@ jobs:
       - name: Build Apple Silicon app
         working-directory: companion
         run: |
-          ldflags="-X main.officialAPIURL=$PRODUCTION_API_URL -X main.officialInstallationsURL=$INSTALLATIONS_URL"
+          ldflags="-X main.officialAPIURL=$PRODUCTION_API_URL -X main.officialInstallationsURL=$INSTALLATIONS_URL -X main.officialUpdateOrigin=$UPDATE_ORIGIN"
           go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build \
             -clean -platform darwin/arm64 -ldflags "$ldflags"
+      - name: Embed Sparkle 2.9.4
+        run: |
+          archive="$RUNNER_TEMP/Sparkle-2.9.4.tar.xz"
+          framework_root="$RUNNER_TEMP/sparkle"
+          curl --fail --location --silent --show-error \
+            https://github.com/sparkle-project/Sparkle/releases/download/2.9.4/Sparkle-2.9.4.tar.xz \
+            --output "$archive"
+          echo "ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9  $archive" | shasum -a 256 -c -
+          mkdir -p "$framework_root"
+          tar -xf "$archive" -C "$framework_root" ./Sparkle.framework
+          app_path=$(find companion/build/bin -maxdepth 1 -type d -name '*.app' -print)
+          test $(printf '%s\n' "$app_path" | grep -c .) -eq 1
+          mkdir -p "$app_path/Contents/Frameworks"
+          ditto "$framework_root/Sparkle.framework" "$app_path/Contents/Frameworks/Sparkle.framework"
+          mkdir -p "$app_path/Contents/Resources/ThirdParty"
+          cp companion/third_party/sparkle/LICENSE "$app_path/Contents/Resources/ThirdParty/Sparkle-LICENSE"
+          lipo -verify_arch arm64 "$app_path/Contents/Frameworks/Sparkle.framework/Sparkle"
       - name: Sign and package
         run: |
           echo "Locating the app bundle"
@@ -205,6 +229,7 @@ jobs:
     env:
       PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
       INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
+      UPDATE_ORIGIN: ${{ vars.UPDATE_ORIGIN }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -232,7 +257,10 @@ jobs:
           if (-not $env:PRODUCTION_API_URL -or -not $env:INSTALLATIONS_URL) {
             throw "release service origins are required"
           }
-          $ldflags = "-X main.officialAPIURL=$env:PRODUCTION_API_URL -X main.officialInstallationsURL=$env:INSTALLATIONS_URL"
+          if ($env:UPDATE_ORIGIN -ne "https://updates.wowmarkets.app") {
+            throw "trusted update origin is required"
+          }
+          $ldflags = "-X main.officialAPIURL=$env:PRODUCTION_API_URL -X main.officialInstallationsURL=$env:INSTALLATIONS_URL -X main.officialUpdateOrigin=$env:UPDATE_ORIGIN"
           go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build -clean -platform windows/amd64 -nsis -ldflags $ldflags
           $installer = @(Get-ChildItem build/bin -Filter "*-installer.exe")
           if ($installer.Count -ne 1) {
@@ -266,15 +294,43 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: companion/go.mod
+          cache-dependency-path: companion/go.sum
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: companion-*
           path: release-assets
           merge-multiple: true
-      - name: Validate and checksum assets
+      - name: Generate signed appcasts
+        env:
+          CHANNEL: ${{ needs.validate.outputs.channel }}
+          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY_BASE64 }}
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          ./scripts/release/validate-companion-artifacts.sh release-assets
+          test -n "$UPDATE_SIGNING_PRIVATE_KEY"
+          key_path="$RUNNER_TEMP/update-signing-private.key"
+          trap 'rm -f "$key_path"' EXIT
+          umask 077
+          printf '%s' "$UPDATE_SIGNING_PRIVATE_KEY" > "$key_path"
+          published_at=$(git show -s --format=%cI "$GITHUB_SHA")
+          cd companion
+          go run ./cmd/updatefeed generate \
+            --private-key "$key_path" \
+            --version "$VERSION" \
+            --channel "$CHANNEL" \
+            --published-at "$published_at" \
+            --assets-dir ../release-assets \
+            --output-dir ../release-assets
+      - name: Validate and checksum assets
+        env:
+          CHANNEL: ${{ needs.validate.outputs.channel }}
+        run: |
+          ./scripts/release/validate-companion-artifacts.sh release-assets "$CHANNEL"
           (cd release-assets && sha256sum \
+            "companion-$CHANNEL-macos-arm64.xml" \
+            "companion-$CHANNEL-windows-amd64.xml" \
             wow-markets-companion-macos-arm64.dmg \
             wow-markets-companion-windows-amd64-setup.exe \
             wow-markets-companion-macos-arm64.spdx.json \
@@ -287,6 +343,8 @@ jobs:
             release-assets/wow-markets-companion-windows-amd64-setup.exe
             release-assets/wow-markets-companion-macos-arm64.spdx.json
             release-assets/wow-markets-companion-windows-amd64.spdx.json
+            release-assets/companion-${{ needs.validate.outputs.channel }}-macos-arm64.xml
+            release-assets/companion-${{ needs.validate.outputs.channel }}-windows-amd64.xml
             release-assets/SHA256SUMS
       - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f # v3
         with:

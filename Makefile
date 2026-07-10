@@ -1,4 +1,4 @@
-WAILS := go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+WAILS := go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
 
 .PHONY: addon-check addon-package check companion companion-build companion-check contract-check fmt release-check
 

@@ -25,6 +25,8 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>SUPublicEDKey</key>
+        <string>92xOZ5+HUUc84qIBQB1DhrGsUfx+f5/rWrMOEJ4xA18=</string>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

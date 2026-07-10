@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible addon or companion problem
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Do not include installation tokens, real SavedVariables, or security vulnerabilities.
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options: [Addon, Companion]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true

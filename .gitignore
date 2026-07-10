@@ -1,0 +1,6 @@
+.DS_Store
+.env
+*.local
+companion/build/bin/
+companion/dist/
+companion/frontend/wailsjs/

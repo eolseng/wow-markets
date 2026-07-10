@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/ra1phdd/systray-on-wails v0.0.0-20241115230547-79e792e24569
-	github.com/wailsapp/wails/v2 v2.12.0
+	github.com/wailsapp/wails/v2 v2.13.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/sys v0.47.0
 )

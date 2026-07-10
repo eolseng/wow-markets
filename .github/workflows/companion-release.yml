@@ -48,7 +48,7 @@ jobs:
           ./scripts/release/validate-version.sh companion "$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Verify client
-        run: make check
+        run: make check && make release-check
 
   macos:
     needs: validate

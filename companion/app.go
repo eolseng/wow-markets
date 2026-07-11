@@ -27,6 +27,7 @@ type App struct {
 	installationsURL string
 	windowShown      bool
 	quitting         bool
+	updateRelaunch   bool
 
 	initializing   bool
 	startupPhase   string
@@ -128,7 +129,7 @@ func (app *App) shutdown(context.Context) {
 
 func (app *App) beforeClose(ctx context.Context) bool {
 	app.mu.Lock()
-	quitting := app.quitting
+	quitting := app.quitting || app.updateRelaunch
 	app.windowShown = false
 	app.mu.Unlock()
 
@@ -137,6 +138,12 @@ func (app *App) beforeClose(ctx context.Context) bool {
 	}
 	runtime.WindowHide(ctx)
 	return true
+}
+
+func (app *App) prepareForUpdateRelaunch() {
+	app.mu.Lock()
+	app.updateRelaunch = true
+	app.mu.Unlock()
 }
 
 func (app *App) ShowWindow() {

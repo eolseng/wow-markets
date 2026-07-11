@@ -30,6 +30,10 @@ const elements = {
   heroSummary: $("#hero-summary"),
   heroSymbol: $("#hero-symbol"),
   heroTitle: $("#hero-title"),
+  homeUpdateButton: $("#home-update-button"),
+  homeUpdateMessage: $("#home-update-message"),
+  homeUpdateNotice: $("#home-update-notice"),
+  homeUpdateTitle: $("#home-update-title"),
   launchAtLoginSection: $("#launch-at-login-section"),
   launchAtLoginToggle: $("#launch-at-login-toggle"),
   lastUploadContent: $("#last-upload-content"),
@@ -276,6 +280,15 @@ function renderSettings(snapshot) {
 
 function renderUpdater(updater) {
   const view = deriveUpdaterView(updater)
+  const showHomeNotice = Boolean(view.notify && updater.available_version)
+  elements.homeUpdateNotice.hidden = !showHomeNotice
+  if (showHomeNotice) {
+    elements.homeUpdateTitle.textContent = `Update ${updater.available_version} is available`
+    elements.homeUpdateMessage.textContent = view.message
+    elements.homeUpdateButton.hidden = !view.action
+    elements.homeUpdateButton.disabled = state.busy || !view.action
+    elements.homeUpdateButton.textContent = view.action || "Review update"
+  }
   setBadge(elements.updateStatus, view.label, view.tone)
   elements.updateMessage.textContent = view.message
   elements.updateChannel.value = updater.channel || "stable"
@@ -512,6 +525,10 @@ elements.updateCheckButton.addEventListener("click", () => {
 })
 
 elements.updateInstallButton.addEventListener("click", () => {
+  run(() => backend().InstallUpdate())
+})
+
+elements.homeUpdateButton.addEventListener("click", () => {
   run(() => backend().InstallUpdate())
 })
 

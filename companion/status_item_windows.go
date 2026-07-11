@@ -18,6 +18,7 @@ var trayIcon []byte
 
 var windowsStatusItem struct {
 	sync.Mutex
+	status *systray.MenuItem
 	update *systray.MenuItem
 }
 
@@ -50,6 +51,7 @@ func onWindowsStatusItemReady(app *App) {
 	update := systray.AddMenuItem("Install update", "Install the available WoW Markets Companion update")
 	update.Hide()
 	windowsStatusItem.Lock()
+	windowsStatusItem.status = status
 	windowsStatusItem.update = update
 	windowsStatusItem.Unlock()
 	updateStatusItem(app.updaterSnapshot())
@@ -75,12 +77,22 @@ func onWindowsStatusItemReady(app *App) {
 
 func updateStatusItem(snapshot UpdaterSnapshot) {
 	windowsStatusItem.Lock()
+	status := windowsStatusItem.status
 	item := windowsStatusItem.update
 	windowsStatusItem.Unlock()
-	if item == nil {
+	if item == nil || status == nil {
 		return
 	}
-	if !snapshot.ReadyToInstall || snapshot.AvailableVersion == "" {
+	available := snapshot.AvailableVersion != "" && (snapshot.Status == updateStatusAvailable || snapshot.Status == updateStatusDownloading || snapshot.Status == updateStatusReady || snapshot.Status == updateStatusDeferred)
+	if !available {
+		systray.SetTooltip("WoW Markets Companion is running")
+		status.SetTitle("Status: Running")
+		item.Hide()
+		return
+	}
+	systray.SetTooltip("WoW Markets Companion update " + snapshot.AvailableVersion + " is available")
+	status.SetTitle("Status: Update " + snapshot.AvailableVersion + " available")
+	if !snapshot.ReadyToInstall {
 		item.Hide()
 		return
 	}

@@ -119,6 +119,7 @@ test("keeps updater states calm and explicit", () => {
   const ready = deriveUpdaterView({ status: "ready", available_version: "1.1.0", mandatory: false })
   assert.equal(ready.action, "Install and restart")
   assert.equal(ready.canDefer, true)
+  assert.equal(ready.notify, true)
 
   const required = deriveUpdaterView({ status: "available", available_version: "1.2.0", mandatory: true })
   assert.equal(required.label, "Required")
@@ -126,6 +127,9 @@ test("keeps updater states calm and explicit", () => {
 
   const deferredReady = deriveUpdaterView({ status: "deferred", available_version: "1.1.0", ready_to_install: true })
   assert.equal(deferredReady.action, "Install and restart")
+
+  const current = deriveUpdaterView({ status: "current", current_version: "1.0.0" })
+  assert.equal(current.notify, undefined)
 })
 
 test("shows an unpromoted channel as current rather than a verification failure", () => {

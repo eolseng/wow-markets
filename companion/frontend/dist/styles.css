@@ -162,6 +162,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 .skeleton-lines i:nth-child(3) { width: 58%; justify-self: center; }
 
 .overview-content { display: grid; gap: 11px; }
+.update-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  border: 1px solid rgba(103,220,237,.24);
+  border-radius: 11px;
+  background: linear-gradient(100deg, rgba(21,48,65,.9), rgba(13,27,44,.94));
+  padding: 11px 12px;
+}
+.update-notice-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--cyan-soft); color: var(--cyan); font-size: 17px; font-weight: 800; }
+.update-notice-copy { display: grid; gap: 2px; min-width: 0; }
+.update-notice-copy strong { color: #e9f8fb; font-size: 12px; }
+.update-notice-copy span { overflow: hidden; color: #9fb3c8; font-size: 10px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.update-notice button { min-height: 32px; padding: 0 13px; }
 .hero-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 17px; align-items: center; min-height: 134px; overflow: hidden; padding: 20px; }
 .hero-card::after { position: absolute; right: -95px; top: -120px; width: 260px; height: 260px; border: 1px solid currentColor; border-radius: 50%; content: ""; opacity: .07; box-shadow: 0 0 0 48px currentColor; pointer-events: none; }
 .hero-card.tone-active { color: var(--cyan); background: radial-gradient(circle at 90% 20%, rgba(34,211,238,.11), transparent 19rem), linear-gradient(145deg, rgba(16,28,47,.98), rgba(9,17,30,.98)); }
@@ -333,6 +348,8 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
 @media (max-width: 660px) {
   .app-shell { padding-inline: 13px; }
   .dashboard-grid { grid-template-columns: 1fr; }
+  .update-notice { grid-template-columns: auto minmax(0, 1fr); }
+  .update-notice button { grid-column: 1 / -1; width: 100%; }
   .counts-panel { min-height: 64px; }
   .setup-check { padding-inline: 7px; }
   .setup-check > div { display: none; }

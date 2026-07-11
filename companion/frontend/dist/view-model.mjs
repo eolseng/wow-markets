@@ -41,13 +41,13 @@ export function deriveUpdaterView(updater = {}) {
     case "checking":
       return { label: "Checking", tone: "active", message: "Checking the signed update feed.", canCheck: false }
     case "downloading":
-      return { label: "Downloading", tone: "active", message: version ? `${version} is downloading securely in the background.` : "Downloading securely in the background.", canCheck: false }
+      return { label: "Downloading", tone: "active", message: version ? `${version} is downloading securely in the background.` : "Downloading securely in the background.", canCheck: false, notify: true }
     case "available":
-      return { label: updater.mandatory ? "Required" : "Available", tone: updater.mandatory ? "warning" : "active", message: `${version} is available.`, action: "Review update", canDefer: !updater.mandatory, canCheck: true }
+      return { label: updater.mandatory ? "Required" : "Available", tone: updater.mandatory ? "warning" : "active", message: `${version} is available.`, action: "Review update", canDefer: !updater.mandatory, canCheck: true, notify: true }
     case "ready":
-      return { label: updater.mandatory ? "Required" : "Ready", tone: updater.mandatory ? "warning" : "success", message: `${version} is verified and ready to install.`, action: "Install and restart", canDefer: !updater.mandatory, canCheck: true }
+      return { label: updater.mandatory ? "Required" : "Ready", tone: updater.mandatory ? "warning" : "success", message: `${version} is verified and ready to install.`, action: "Install and restart", canDefer: !updater.mandatory, canCheck: true, notify: true }
     case "deferred":
-      return { label: "Later", tone: "warning", message: `${version} is deferred. Scans and uploads continue normally.`, action: updater.ready_to_install ? "Install and restart" : "Review update", canCheck: true }
+      return { label: "Later", tone: "warning", message: `${version} is deferred. Scans and uploads continue normally.`, action: updater.ready_to_install ? "Install and restart" : "Review update", canCheck: true, notify: true }
     case "offline":
       return { label: "Offline", tone: "warning", message: "Updates could not be checked. Scans and uploads continue normally.", canCheck: true }
     case "error":

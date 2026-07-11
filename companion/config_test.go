@@ -25,8 +25,8 @@ func TestConfiguredServiceEndpointsDefaultToLoopback(t *testing.T) {
 }
 
 func TestCompanionVersionComesFromWailsConfig(t *testing.T) {
-	if actual := companionVersion(); actual != "1.0.0-rc.10" {
-		t.Fatalf("companionVersion() = %q, want %q", actual, "1.0.0-rc.10")
+	if actual := companionVersion(); actual != "1.0.0-rc.11" {
+		t.Fatalf("companionVersion() = %q, want %q", actual, "1.0.0-rc.11")
 	}
 }
 

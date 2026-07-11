@@ -30,6 +30,7 @@ extern void wmsStatusItemQuit(void);
 
 static NSStatusItem *wmsStatusItem;
 static WMSStatusItemTarget *wmsStatusItemTarget;
+static NSMenuItem *wmsStatusLine;
 static NSMenuItem *wmsUpdateItem;
 
 static NSImage *wmsCreateStatusIcon(void) {
@@ -77,9 +78,9 @@ static void wmsCreateStatusItem(void) {
 		[button setToolTip:@"WoW Markets Companion is running"];
 
 		NSMenu *menu = [[NSMenu alloc] initWithTitle:@"WoW Markets Companion"];
-		NSMenuItem *statusItem = [[NSMenuItem alloc] initWithTitle:@"Status: Running" action:nil keyEquivalent:@""];
-		[statusItem setEnabled:NO];
-		[menu addItem:statusItem];
+		wmsStatusLine = [[NSMenuItem alloc] initWithTitle:@"Status: Running" action:nil keyEquivalent:@""];
+		[wmsStatusLine setEnabled:NO];
+		[menu addItem:wmsStatusLine];
 		[menu addItem:[NSMenuItem separatorItem]];
 
 		NSMenuItem *showItem = [[NSMenuItem alloc] initWithTitle:@"Show Window" action:@selector(showWindow:) keyEquivalent:@""];
@@ -108,6 +109,7 @@ static void wmsRemoveStatusItem(void) {
 		[[NSStatusBar systemStatusBar] removeStatusItem:wmsStatusItem];
 		wmsStatusItem = nil;
 		wmsStatusItemTarget = nil;
+		wmsStatusLine = nil;
 		wmsUpdateItem = nil;
 	});
 }
@@ -119,9 +121,13 @@ static void wmsSetUpdateAvailable(short available, const char *version) {
 			return;
 		}
 		if (available) {
+			[[wmsStatusItem button] setToolTip:[NSString stringWithFormat:@"WoW Markets Companion update %@ is available", versionString]];
+			[wmsStatusLine setTitle:[NSString stringWithFormat:@"Status: Update %@ available", versionString]];
 			[wmsUpdateItem setTitle:[NSString stringWithFormat:@"Install update %@", versionString]];
 			[wmsUpdateItem setHidden:NO];
 		} else {
+			[[wmsStatusItem button] setToolTip:@"WoW Markets Companion is running"];
+			[wmsStatusLine setTitle:@"Status: Running"];
 			[wmsUpdateItem setHidden:YES];
 		}
 	});
@@ -150,7 +156,7 @@ func activateVisibleWindow() {
 }
 
 func updateStatusItem(snapshot UpdaterSnapshot) {
-	available := snapshot.AvailableVersion != "" && (snapshot.Status == updateStatusAvailable || snapshot.ReadyToInstall)
+	available := snapshot.AvailableVersion != "" && (snapshot.Status == updateStatusAvailable || snapshot.Status == updateStatusDeferred || snapshot.ReadyToInstall)
 	version := C.CString(snapshot.AvailableVersion)
 	defer C.free(unsafe.Pointer(version))
 	C.wmsSetUpdateAvailable(boolToCShort(available), version)

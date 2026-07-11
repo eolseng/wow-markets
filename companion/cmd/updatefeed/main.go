@@ -197,14 +197,14 @@ func renderFeed(input feedInput) []byte {
       <sparkle:version>%s</sparkle:version>
       <sparkle:shortVersionString>%s</sparkle:shortVersionString>
       <sparkle:releaseNotesLink>%s</sparkle:releaseNotesLink>
-%s      <enclosure url="%s" length="%d" type="%s" sparkle:edSignature="%s" sparkle:os="%s" wow:arch="%s" />
+%s      <enclosure url="%s" length="%d" type="%s" sparkle:version="%s" sparkle:edSignature="%s" sparkle:os="%s" wow:arch="%s" />
     </item>
   </channel>
 </rss>
-`, escape(input.Title), escape(input.PublishedAt), escape(input.BuildVersion),
+`, escape(input.Title), escape(input.PublishedAt), escape(input.Version),
 		escape(input.Version), escape(input.NotesURL), critical, escape(input.AssetURL),
-		input.Length, escape(input.ContentType), escape(input.Signature), escape(input.OS),
-		escape(input.Arch)))
+		input.Length, escape(input.ContentType), escape(input.BuildVersion), escape(input.Signature),
+		escape(input.OS), escape(input.Arch)))
 }
 
 func appendFeedSignature(content []byte, privateKey ed25519.PrivateKey) []byte {

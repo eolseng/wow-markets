@@ -38,6 +38,9 @@ it vanilla HTML/CSS/ES modules with no bundler.
 ## Platform notes
 
 - Closing the window hides it; tray/menu-bar operation continues.
+- Do not use browser-native `alert`, `confirm`, or `prompt` dialogs. They are
+  unreliable in packaged Wails webviews; use an accessible inline confirmation
+  state instead.
 - Launch-at-login code is split by build tags. Never mutate the real login
   configuration in tests; test payload/command construction instead.
 - Keep CI package paths aligned with `wails.json` when renaming build output.

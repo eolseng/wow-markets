@@ -37,6 +37,9 @@ description: Implement, debug, review, release, and verify the WoW Markets Compa
 7. Serialize setup and token mutations with watcher stop/restart. Never let a
    stale-token watcher overlap credential or durable queue changes, and ensure
    every failure path reconciles the watcher afterward.
+8. Do not depend on browser-native `alert`, `confirm`, or `prompt` dialogs in
+   packaged Wails builds. Model consequential confirmations as accessible
+   in-app state with explicit cancel/confirm actions and frontend tests.
 
 ## Protect contracts and compatibility
 

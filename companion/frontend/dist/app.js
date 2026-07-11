@@ -1,5 +1,6 @@
 import {
   accountListSignature,
+  deriveTokenRemovalView,
   deriveView,
   deriveUpdaterView,
   heroAnnouncementSignature,
@@ -10,6 +11,7 @@ const state = {
   accountsSignature: "",
   heroSignature: "",
   page: "overview",
+  removeTokenConfirmationOpen: false,
   replaceTokenOpen: false,
   snapshot: null,
 }
@@ -43,6 +45,9 @@ const elements = {
   overviewPage: $("#overview-page"),
   recentList: $("#recent-list"),
   removeTokenButton: $("#remove-token-button"),
+  removeTokenCancelButton: $("#remove-token-cancel-button"),
+  removeTokenConfirmButton: $("#remove-token-confirm-button"),
+  removeTokenConfirmation: $("#remove-token-confirmation"),
   replaceTokenButton: $("#replace-token-button"),
   runtimeDot: $("#runtime-dot"),
   runtimeLabel: $("#runtime-label"),
@@ -251,11 +256,17 @@ function renderFacts(container, scan) {
 
 function renderSettings(snapshot) {
   const tokenStored = Boolean(snapshot.token_stored)
+  if (!tokenStored) state.removeTokenConfirmationOpen = false
+  const removal = deriveTokenRemovalView(tokenStored, state.removeTokenConfirmationOpen)
   elements.settingsTokenDetail.textContent = tokenStored
     ? `${snapshot.token_prefix || "wms1_"}… stored securely`
     : "No token stored"
   setBadge(elements.settingsTokenStatus, tokenStored ? "Stored" : "Missing", tokenStored ? "success" : "warning")
-  elements.removeTokenButton.disabled = state.busy || !tokenStored
+  elements.removeTokenButton.hidden = !removal.showTrigger
+  elements.removeTokenButton.disabled = state.busy || !removal.canRemove
+  elements.removeTokenConfirmation.hidden = !removal.showConfirmation
+  elements.removeTokenCancelButton.disabled = state.busy
+  elements.removeTokenConfirmButton.disabled = state.busy
   elements.replaceTokenButton.textContent = tokenStored ? "Replace" : "Add token"
   elements.replaceTokenButton.setAttribute("aria-expanded", String(state.replaceTokenOpen))
   elements.settingsTokenForm.hidden = !state.replaceTokenOpen
@@ -493,8 +504,21 @@ elements.replaceTokenButton.addEventListener("click", () => {
 })
 
 elements.removeTokenButton.addEventListener("click", () => {
-  if (!window.confirm("Forget this installation token on this device? It will not be revoked on the website.")) return
-  run(() => backend().RemoveInstallationToken())
+  state.removeTokenConfirmationOpen = true
+  if (state.snapshot) renderSettings(state.snapshot)
+})
+
+elements.removeTokenCancelButton.addEventListener("click", () => {
+  state.removeTokenConfirmationOpen = false
+  if (state.snapshot) renderSettings(state.snapshot)
+})
+
+elements.removeTokenConfirmButton.addEventListener("click", () => {
+  run(async () => {
+    const snapshot = await backend().RemoveInstallationToken()
+    state.removeTokenConfirmationOpen = false
+    return snapshot
+  })
 })
 
 for (const selector of ["#get-token-button", "#settings-open-token-button"]) {

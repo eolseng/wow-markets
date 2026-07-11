@@ -3,10 +3,25 @@ import assert from "node:assert/strict"
 
 import {
   accountListSignature,
+  deriveTokenRemovalView,
   deriveView,
   deriveUpdaterView,
   heroAnnouncementSignature,
 } from "./dist/view-model.mjs"
+
+test("requires an inline second step before forgetting a token", () => {
+  assert.deepEqual(deriveTokenRemovalView(true, false), {
+    canRemove: true,
+    showConfirmation: false,
+    showTrigger: true,
+  })
+  assert.deepEqual(deriveTokenRemovalView(true, true), {
+    canRemove: true,
+    showConfirmation: true,
+    showTrigger: false,
+  })
+  assert.equal(deriveTokenRemovalView(false, true).showConfirmation, false)
+})
 
 const now = Date.parse("2026-07-10T12:00:00Z")
 

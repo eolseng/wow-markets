@@ -56,7 +56,7 @@ export function deriveUpdaterView(updater = {}) {
       return { label: "Development", tone: "", message: updater.message || "Updates are enabled in official builds.", canCheck: false }
     case "current":
     default:
-      return { label: "Current", tone: "success", message: `Version ${updater.current_version || "—"} is up to date.`, canCheck: Boolean(updater.enabled) }
+      return { label: "Current", tone: "success", message: updater.message || `Version ${updater.current_version || "—"} is up to date.`, canCheck: Boolean(updater.enabled) }
   }
 }
 

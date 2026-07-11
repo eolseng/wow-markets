@@ -39,6 +39,8 @@ const (
 
 const defaultUpdateChannel = updatefeed.ChannelStable
 
+var errNoPromotedUpdate = errors.New("no release has been promoted to this update channel")
+
 type UpdaterSnapshot struct {
 	AvailableVersion string `json:"available_version"`
 	Channel          string `json:"channel"`
@@ -288,6 +290,17 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 	defer cancel()
 	release, err := fetchUpdate(checkCtx, http.DefaultClient, *configuration)
 	if err != nil {
+		if errors.Is(err, errNoPromotedUpdate) {
+			app.setUpdaterState(func(state *UpdaterSnapshot) {
+				state.Status = updateStatusCurrent
+				state.Message = fmt.Sprintf("No release has been promoted to the %s channel yet", configuration.Channel)
+				state.AvailableVersion = ""
+				state.Mandatory = false
+				state.Progress = 0
+				state.LastCheckedAt = time.Now().UTC().Format(time.RFC3339)
+			})
+			return
+		}
 		status := updateStatusError
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) || isTransportError(err) {
 			status = updateStatusOffline
@@ -421,6 +434,9 @@ func fetchUpdate(ctx context.Context, client *http.Client, configuration updateC
 		return nil, fmt.Errorf("check update feed: %w", err)
 	}
 	defer response.Body.Close()
+	if response.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("%w: server returned %s", errNoPromotedUpdate, response.Status)
+	}
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("check update feed: server returned %s", response.Status)
 	}

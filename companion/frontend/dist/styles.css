@@ -44,9 +44,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 [hidden] { display: none !important; }
 
 .app-shell {
-  display: grid;
-  grid-template-areas: "header" "notice" "content";
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   width: min(100%, 760px);
   height: 100vh;
@@ -60,7 +59,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
   align-items: center;
 }
 
-.app-header { grid-area: header; min-height: 43px; justify-content: space-between; gap: 16px; }
+.app-header { min-height: 43px; flex: 0 0 auto; justify-content: space-between; gap: 16px; }
 
 .brand {
   gap: 10px;
@@ -128,7 +127,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 .icon-button svg, .back-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .notice {
-  grid-area: notice;
+  flex: 0 0 auto;
   border: 1px solid rgba(251,113,133,.25);
   border-radius: 9px;
   background: rgba(85, 24, 38, .55);
@@ -138,7 +137,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
   padding: 9px 12px;
 }
 
-.page { grid-area: content; min-height: 0; overflow: auto; scrollbar-color: rgba(145,166,199,.25) transparent; }
+.page { min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; scrollbar-color: rgba(145,166,199,.25) transparent; }
 .starting-card, .hero-card, .setup-card, .panel, .settings-card {
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -287,17 +286,12 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
 .background-note { margin: 0; color: var(--faint); font-size: 9px; text-align: center; }
 
 .settings-page {
-  display: grid;
-  align-content: start;
-  min-height: 0;
-  max-height: 100%;
-  gap: 11px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  display: block;
   overscroll-behavior: contain;
   padding-bottom: 8px;
   -webkit-overflow-scrolling: touch;
 }
+.settings-page .page-title-row { margin-bottom: 11px; }
 .page-title-row { gap: 10px; }
 .page-title-row > div { min-width: 0; flex: 1 1 auto; }
 .page-title-row h1 { font-size: 19px; }

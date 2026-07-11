@@ -52,6 +52,7 @@ VIAddVersionKey "ProductName"     "${INFO_PRODUCTNAME}"
 ManifestDPIAware true
 
 !include "MUI.nsh"
+!include "StdUtils.nsh"
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
@@ -98,17 +99,17 @@ Function .onInit
 FunctionEnd
 
 Function LaunchCompanionAsUser
-    # The installer is elevated. Ask the existing Explorer shell to launch the
-    # companion with the interactive user's normal token after installation.
-    nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -Command "$$shell = New-Object -ComObject Shell.Application; $$shell.ShellExecute($\"$INSTDIR\${PRODUCT_EXECUTABLE}$\", $\"$\", $\"$INSTDIR$\", $\"open$\", 1)"'
-    Pop $0
-    Pop $1
+    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${PRODUCT_EXECUTABLE}" "open" ""
+FunctionEnd
+
+Function LaunchUpdatedCompanionAsUser
+    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${PRODUCT_EXECUTABLE}" "open" "--background"
 FunctionEnd
 
 Function .onInstSuccess
     IfSilent launch_after_update done
     launch_after_update:
-        Call LaunchCompanionAsUser
+        Call LaunchUpdatedCompanionAsUser
     done:
 FunctionEnd
 
@@ -120,6 +121,11 @@ Section
     SetOutPath $INSTDIR
 
     !insertmacro wails.files
+
+    SetOutPath "$INSTDIR\ThirdParty"
+    File /oname=StdUtils-LGPL.txt "tmp\StdUtils-LGPL.txt"
+    File /oname=StdUtils-LGPL-CLARIFICATION.txt "tmp\StdUtils-LGPL-CLARIFICATION.txt"
+    SetOutPath $INSTDIR
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"

@@ -16,8 +16,15 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
 	startHidden := launchedInBackground()
+	if dataDir, err := companionDataDir(); err == nil {
+		if visible, found, consumeErr := consumeUpdateRelaunchVisibility(dataDir); consumeErr != nil {
+			log.Printf("restore update window state: %v", consumeErr)
+		} else if found {
+			startHidden = !visible
+		}
+	}
+	app := newApp(!startHidden)
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(signals)

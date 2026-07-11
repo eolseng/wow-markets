@@ -288,6 +288,20 @@ jobs:
           if (-not (Test-Path (Join-Path $nsis "makensis.exe"))) {
             throw "makensis.exe was not installed at $nsis"
           }
+          $stdUtilsArchive = Join-Path $env:RUNNER_TEMP "StdUtils.2018-10-27.zip"
+          Invoke-WebRequest `
+            -Uri "https://github.com/lordmulder/stdutils/releases/download/1.14/StdUtils.2018-10-27.zip" `
+            -OutFile $stdUtilsArchive
+          if ((Get-FileHash -Algorithm SHA256 $stdUtilsArchive).Hash.ToLowerInvariant() -ne "3ffe893dc7477fdb1cac551a86ae017509e1f2d0ebdc7185fd0fbaf20870688c") {
+            throw "StdUtils archive checksum mismatch"
+          }
+          $stdUtils = Join-Path $env:RUNNER_TEMP "stdutils"
+          Expand-Archive -Path $stdUtilsArchive -DestinationPath $stdUtils
+          Copy-Item (Join-Path $stdUtils "Include\StdUtils.nsh") (Join-Path $nsis "Include\StdUtils.nsh")
+          Copy-Item (Join-Path $stdUtils "Plugins\Unicode\StdUtils.dll") (Join-Path $nsis "Plugins\x86-unicode\StdUtils.dll")
+          New-Item -ItemType Directory -Force -Path "companion\build\windows\installer\tmp" | Out-Null
+          Copy-Item (Join-Path $stdUtils "LGPL.txt") "companion\build\windows\installer\tmp\StdUtils-LGPL.txt"
+          Copy-Item (Join-Path $stdUtils "LGPL_CLARIFICATION.txt") "companion\build\windows\installer\tmp\StdUtils-LGPL-CLARIFICATION.txt"
           $nsis | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build Windows x64 installer
         working-directory: companion

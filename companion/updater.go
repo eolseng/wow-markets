@@ -264,7 +264,12 @@ func (app *App) InstallUpdate() error {
 	if (status != updateStatusReady && status != updateStatusDeferred) || path == "" {
 		return errors.New("the update has not finished downloading")
 	}
+	if err := app.prepareForUpdateRelaunch(); err != nil {
+		app.setUpdaterError(updateStatusError, err)
+		return err
+	}
 	if err := native.Install(path); err != nil {
+		app.cancelUpdateRelaunch()
 		app.setUpdaterError(updateStatusError, err)
 		return err
 	}

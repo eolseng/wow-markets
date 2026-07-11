@@ -22,7 +22,6 @@ const (
 	defaultUpdateOrigin   = "https://updates.wowmarkets.app"
 	trustedReleaseOrigin  = "https://github.com/eolseng/wow-markets/releases/download/"
 	updateCheckInterval   = 6 * time.Hour
-	initialUpdateDelay    = 15 * time.Second
 	maximumAppcastBytes   = 2 << 20
 	maximumArtifactBytes  = 256 << 20
 
@@ -112,14 +111,7 @@ func (app *App) startUpdater() {
 
 	go func() {
 		defer close(done)
-		initial := time.NewTimer(initialUpdateDelay)
-		defer initial.Stop()
-		select {
-		case <-ctx.Done():
-			return
-		case <-initial.C:
-			app.runUpdateCheck(ctx, false)
-		}
+		app.runUpdateCheck(ctx, false)
 		ticker := time.NewTicker(updateCheckInterval)
 		defer ticker.Stop()
 		for {

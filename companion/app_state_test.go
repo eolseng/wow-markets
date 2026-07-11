@@ -42,19 +42,17 @@ func TestSparkleRelaunchAllowsExternalQuit(t *testing.T) {
 	}
 }
 
-func TestUpdateRelaunchRestoresPreviousWindowVisibility(t *testing.T) {
-	for _, visible := range []bool{true, false} {
-		dataDir := t.TempDir()
-		if err := persistUpdateRelaunchVisibility(dataDir, visible); err != nil {
-			t.Fatal(err)
-		}
-		actual, found, err := consumeUpdateRelaunchVisibility(dataDir)
-		if err != nil || !found || actual != visible {
-			t.Fatalf("consume visibility = %v, %v, %v; want %v, true, nil", actual, found, err, visible)
-		}
-		if _, foundAgain, err := consumeUpdateRelaunchVisibility(dataDir); err != nil || foundAgain {
-			t.Fatalf("consumed state persisted: found=%v err=%v", foundAgain, err)
-		}
+func TestUpdateRelaunchAlwaysShowsWindow(t *testing.T) {
+	app := &App{dataDir: t.TempDir(), windowShown: false}
+	if err := app.prepareForUpdateRelaunch(); err != nil {
+		t.Fatal(err)
+	}
+	visible, found, err := consumeUpdateRelaunchVisibility(app.dataDir)
+	if err != nil || !found || !visible {
+		t.Fatalf("consume visibility = %v, %v, %v; want true, true, nil", visible, found, err)
+	}
+	if _, foundAgain, err := consumeUpdateRelaunchVisibility(app.dataDir); err != nil || foundAgain {
+		t.Fatalf("consumed state persisted: found=%v err=%v", foundAgain, err)
 	}
 }
 

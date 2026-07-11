@@ -28,3 +28,18 @@ not remove the operating-system publisher warning.
 The installer places the app under Program Files and registers an uninstaller.
 Uninstalling the app intentionally leaves local archives and configuration for
 a later reinstall.
+
+## Updates
+
+Official builds check the selected stable or beta channel at startup and every
+six hours. An available version appears on Home, in Settings, and in the tray
+status. Update metadata and artifacts are authenticated with the embedded
+Ed25519 public key and fetched only through the owned update origin and
+immutable GitHub Release URLs.
+
+On macOS, Sparkle presents and installs the update. On Windows, the companion
+downloads and verifies the setup executable in the background; installation
+still requires an elevation prompt because the app lives under Program Files,
+but the update runs silently without the setup wizard. A successful update
+relaunches the companion and opens its window. Local archives, upload state,
+configuration, and the credential-store token are preserved.

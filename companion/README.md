@@ -86,14 +86,21 @@ lock prevents duplicate watchers.
 
 ## Distribution
 
-The `Companion Build` workflow builds the macOS arm64 app and Windows x64
-executable. macOS builds use Developer ID signing and notarization when secrets
-are configured, otherwise ad-hoc signing. The macOS artifact is a disk image
-with a branded Finder layout containing `WoW Markets Companion.app` and an
-Applications link for drag-and-drop installation. The Windows artifact is an
-unsigned Wails NSIS installer that installs the app in Program Files and
-registers an uninstaller. Release artifacts use the `wow-markets-companion-*`
-name.
+The protected `Companion Release` workflow builds the macOS arm64 app and
+Windows x64 installer from `main`. Every macOS release requires Developer ID
+signing, notarization, and stapling; missing credentials fail the release. The
+DMG uses a branded Finder layout containing `WoW Markets Companion.app` and an
+Applications link. The unsigned Windows NSIS installer installs under Program
+Files and registers an uninstaller. Releases also contain signed stable or beta
+appcasts, checksums, SPDX SBOMs, and GitHub attestations. See
+`docs/releasing.md` for the complete draft audit, publication, promotion,
+smoke-test, and rollback procedure.
+
+Official builds check for updates at startup and every six hours. Available
+updates appear on Home and in the tray. macOS installs through Sparkle; Windows
+downloads a verified installer in the background, requests elevation, installs
+silently, and relaunches. Both platforms open the updated window after a
+successful installation.
 
 ## Manual smoke test
 

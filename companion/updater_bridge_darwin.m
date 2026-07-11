@@ -5,6 +5,8 @@
 #import <dlfcn.h>
 #import <objc/message.h>
 
+extern void wmsSparkleWillRelaunch(void);
+
 @interface WOWMarketsUpdaterDelegate : NSObject
 @property(nonatomic, copy) NSString *feedURL;
 @end
@@ -13,6 +15,13 @@
 - (NSString *)feedURLStringForUpdater:(id)updater {
     (void)updater;
     return self.feedURL;
+}
+
+- (void)updaterWillRelaunchApplication:(id)updater {
+    (void)updater;
+    // Wails normally cancels external macOS quit events so closing the window
+    // hides the companion. Allow Sparkle's explicit relaunch request through.
+    wmsSparkleWillRelaunch();
 }
 @end
 

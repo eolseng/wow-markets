@@ -32,6 +32,14 @@ func TestPendingQuitSurvivesStartupContextAttachment(t *testing.T) {
 	}
 }
 
+func TestSparkleRelaunchAllowsExternalQuit(t *testing.T) {
+	app := &App{}
+	app.prepareForUpdateRelaunch()
+	if app.beforeClose(context.Background()) {
+		t.Fatal("Sparkle install-and-relaunch request was treated as a window hide")
+	}
+}
+
 func TestBackgroundLaunchDoesNotRefreshStartupRegistration(t *testing.T) {
 	if shouldRefreshLaunchAtLogin(true, true) {
 		t.Fatal("background launch would rewrite the startup registration")

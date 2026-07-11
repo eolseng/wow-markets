@@ -72,7 +72,7 @@ type item struct {
 	PublishedAt  string    `xml:"pubDate"`
 	Version      string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle version"`
 	ShortVersion string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle shortVersionString"`
-	NotesURL     string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle releaseNotesLink"`
+	NotesURL     string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle fullReleaseNotesLink"`
 	Mandatory    *struct{} `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle criticalUpdate"`
 	Enclosure    enclosure `xml:"enclosure"`
 }

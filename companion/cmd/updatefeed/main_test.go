@@ -60,6 +60,13 @@ func TestGenerateCreatesVerifiablePlatformAppcasts(t *testing.T) {
 		if !strings.Contains(string(payload), `sparkle:version="42"`) {
 			t.Fatalf("%s does not expose the native build version to Sparkle", name)
 		}
+		if strings.Contains(string(payload), "<sparkle:releaseNotesLink") {
+			t.Fatalf("%s uses unsigned external release notes", name)
+		}
+		if !strings.Contains(string(payload), "<description>") ||
+			!strings.Contains(string(payload), "<sparkle:fullReleaseNotesLink>") {
+			t.Fatalf("%s does not embed notes with a version-history link", name)
+		}
 		releases, err := updatefeed.ParseSigned(payload, publicKey)
 		if err != nil {
 			t.Fatalf("ParseSigned(%s) error = %v", name, err)

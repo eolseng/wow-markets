@@ -45,3 +45,10 @@ func wmsStatusItemQuit() {
 		app.Quit()
 	}
 }
+
+//export wmsSparkleWillRelaunch
+func wmsSparkleWillRelaunch() {
+	if app := currentDarwinStatusItemApp(); app != nil {
+		app.prepareForUpdateRelaunch()
+	}
+}

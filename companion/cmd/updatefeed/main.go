@@ -140,6 +140,7 @@ func generate(args []string) error {
 			Version:      *version,
 			BuildVersion: strings.TrimSpace(*buildVersion),
 			Title:        "WoW Markets Companion " + *version,
+			Description:  "This update is ready to install. Select Version History for full release notes.",
 			PublishedAt:  published.UTC().Format(time.RFC1123Z),
 			NotesURL:     notesURL,
 			AssetURL:     releaseBase + "/" + target.assetName,
@@ -171,6 +172,7 @@ type feedInput struct {
 	Version      string
 	BuildVersion string
 	Title        string
+	Description  string
 	PublishedAt  string
 	NotesURL     string
 	AssetURL     string
@@ -196,13 +198,14 @@ func renderFeed(input feedInput) []byte {
       <pubDate>%s</pubDate>
       <sparkle:version>%s</sparkle:version>
       <sparkle:shortVersionString>%s</sparkle:shortVersionString>
-      <sparkle:releaseNotesLink>%s</sparkle:releaseNotesLink>
+      <description>%s</description>
+      <sparkle:fullReleaseNotesLink>%s</sparkle:fullReleaseNotesLink>
 %s      <enclosure url="%s" length="%d" type="%s" sparkle:version="%s" sparkle:edSignature="%s" sparkle:os="%s" wow:arch="%s" />
     </item>
   </channel>
 </rss>
 `, escape(input.Title), escape(input.PublishedAt), escape(input.Version),
-		escape(input.Version), escape(input.NotesURL), critical, escape(input.AssetURL),
+		escape(input.Version), escape(input.Description), escape(input.NotesURL), critical, escape(input.AssetURL),
 		input.Length, escape(input.ContentType), escape(input.BuildVersion), escape(input.Signature),
 		escape(input.OS), escape(input.Arch)))
 }

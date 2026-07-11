@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/eolseng/wow-markets/companion/internal/updatefeed"
@@ -52,6 +53,12 @@ func TestGenerateCreatesVerifiablePlatformAppcasts(t *testing.T) {
 		payload, err := os.ReadFile(filepath.Join(outputDir, name))
 		if err != nil {
 			t.Fatal(err)
+		}
+		if !strings.Contains(string(payload), "<sparkle:version>1.1.0-beta.1</sparkle:version>") {
+			t.Fatalf("%s does not expose the semantic version to legacy clients", name)
+		}
+		if !strings.Contains(string(payload), `sparkle:version="42"`) {
+			t.Fatalf("%s does not expose the native build version to Sparkle", name)
 		}
 		releases, err := updatefeed.ParseSigned(payload, publicKey)
 		if err != nil {

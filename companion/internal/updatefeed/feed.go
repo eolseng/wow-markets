@@ -80,6 +80,7 @@ type item struct {
 type enclosure struct {
 	URL       string `xml:"url,attr"`
 	Length    string `xml:"length,attr"`
+	Version   string `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle version,attr"`
 	Signature string `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle edSignature,attr"`
 	OS        string `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle os,attr"`
 	Arch      string `xml:"https://wowmarkets.app/xml-namespaces/update arch,attr"`
@@ -112,6 +113,10 @@ func ParseSigned(payload []byte, publicKey ed25519.PublicKey) ([]Release, error)
 		if semanticVersion == "" {
 			semanticVersion = strings.TrimSpace(candidate.Version)
 		}
+		buildVersion := strings.TrimSpace(candidate.Enclosure.Version)
+		if buildVersion == "" {
+			buildVersion = strings.TrimSpace(candidate.Version)
+		}
 		length, err := strconv.ParseInt(strings.TrimSpace(candidate.Enclosure.Length), 10, 64)
 		if err != nil || length <= 0 {
 			return nil, fmt.Errorf("release %q has an invalid enclosure length", candidate.Version)
@@ -127,7 +132,7 @@ func ParseSigned(payload []byte, publicKey ed25519.PublicKey) ([]Release, error)
 			return nil, fmt.Errorf("release %q has an invalid enclosure signature", candidate.Version)
 		}
 		releases = append(releases, Release{
-			BuildVersion: strings.TrimSpace(candidate.Version),
+			BuildVersion: buildVersion,
 			Version:      semanticVersion,
 			Title:        strings.TrimSpace(candidate.Title),
 			PublishedAt:  strings.TrimSpace(candidate.PublishedAt),

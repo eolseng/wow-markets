@@ -103,7 +103,10 @@ Function LaunchCompanionAsUser
 FunctionEnd
 
 Function LaunchUpdatedCompanionAsUser
-    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${PRODUCT_EXECUTABLE}" "open" "--background"
+    # The companion persisted whether its window was visible immediately before
+    # the update. Launch normally and let that one-use state choose whether the
+    # new process starts visible or hidden, matching Sparkle on macOS.
+    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${PRODUCT_EXECUTABLE}" "open" ""
 FunctionEnd
 
 Function .onInstSuccess

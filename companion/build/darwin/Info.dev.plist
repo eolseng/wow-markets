@@ -27,6 +27,10 @@
         <string>{{.Info.Copyright}}</string>
         <key>SUPublicEDKey</key>
         <string>92xOZ5+HUUc84qIBQB1DhrGsUfx+f5/rWrMOEJ4xA18=</string>
+        <key>SURequireSignedFeed</key>
+        <true/>
+        <key>SUVerifyUpdateBeforeExtraction</key>
+        <true/>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -82,6 +83,15 @@ func TestFetchUpdateRejectsTamperedAndMutableMetadata(t *testing.T) {
 				t.Fatal("fetchUpdate() accepted untrusted metadata")
 			}
 		})
+	}
+}
+
+func TestFetchUpdateTreatsUnpromotedChannelAsEmpty(t *testing.T) {
+	server := httptest.NewServer(http.NotFoundHandler())
+	defer server.Close()
+	_, err := fetchUpdate(context.Background(), server.Client(), updateConfiguration{FeedURL: server.URL})
+	if !errors.Is(err, errNoPromotedUpdate) {
+		t.Fatalf("fetchUpdate() error = %v, want unpromoted-channel sentinel", err)
 	}
 }
 

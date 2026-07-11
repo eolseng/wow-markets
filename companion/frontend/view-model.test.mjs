@@ -124,3 +124,15 @@ test("keeps updater states calm and explicit", () => {
   assert.equal(required.label, "Required")
   assert.equal(required.canDefer, false)
 })
+
+test("shows an unpromoted channel as current rather than a verification failure", () => {
+  const updater = deriveUpdaterView({
+    enabled: true,
+    status: "current",
+    current_version: "1.0.0-rc.1",
+    message: "No release has been promoted to the beta channel yet",
+  })
+  assert.equal(updater.label, "Current")
+  assert.match(updater.message, /beta channel/)
+  assert.equal(updater.tone, "success")
+})

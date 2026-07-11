@@ -503,7 +503,8 @@ elements.launchAtLoginToggle.addEventListener("change", () => {
 })
 
 elements.updateChannel.addEventListener("change", () => {
-  run(() => backend().SetUpdateChannel(elements.updateChannel.value))
+  const channel = elements.updateChannel.value
+  run(() => backend().SetUpdateChannel(channel))
 })
 
 elements.updateCheckButton.addEventListener("click", () => {

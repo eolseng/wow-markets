@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       channel: ${{ steps.version.outputs.channel }}
+      build_version: ${{ steps.version.outputs.build_version }}
       version: ${{ steps.version.outputs.version }}
       windows_file_version: ${{ steps.version.outputs.windows_file_version }}
     steps:
@@ -49,6 +50,11 @@ jobs:
         run: |
           ./scripts/release/validate-version.sh companion "$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          build_version=$(tr -d '[:space:]' < companion/build-version.txt)
+          case "$build_version" in
+            ''|*[!0-9]*|0) echo "companion build version must be a positive integer" >&2; exit 1 ;;
+          esac
+          echo "build_version=$build_version" >> "$GITHUB_OUTPUT"
           windows_file_version=$(./scripts/release/windows-file-version.sh "$VERSION")
           echo "windows_file_version=$windows_file_version" >> "$GITHUB_OUTPUT"
           case "$VERSION" in
@@ -65,6 +71,7 @@ jobs:
     permissions:
       contents: read
     env:
+      BUILD_VERSION: ${{ needs.validate.outputs.build_version }}
       PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
       INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
       UPDATE_ORIGIN: ${{ vars.UPDATE_ORIGIN }}
@@ -140,6 +147,8 @@ jobs:
           mkdir -p "$app_path/Contents/Resources/ThirdParty"
           cp companion/third_party/sparkle/LICENSE "$app_path/Contents/Resources/ThirdParty/Sparkle-LICENSE"
           lipo "$app_path/Contents/Frameworks/Sparkle.framework/Sparkle" -verify_arch arm64
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_VERSION" "$app_path/Contents/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app_path/Contents/Info.plist")" = "$BUILD_VERSION"
       - name: Sign and package
         run: |
           echo "Locating the app bundle"
@@ -339,6 +348,7 @@ jobs:
       - name: Generate signed appcasts
         env:
           CHANNEL: ${{ needs.validate.outputs.channel }}
+          BUILD_VERSION: ${{ needs.validate.outputs.build_version }}
           UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY_BASE64 }}
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
@@ -352,6 +362,7 @@ jobs:
           go run ./cmd/updatefeed generate \
             --private-key "$key_path" \
             --version "$VERSION" \
+            --build-version "$BUILD_VERSION" \
             --channel "$CHANNEL" \
             --published-at "$published_at" \
             --assets-dir ../release-assets \

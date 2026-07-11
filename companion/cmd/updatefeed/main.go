@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,6 +77,7 @@ func generate(args []string) error {
 	flags := flag.NewFlagSet("generate", flag.ContinueOnError)
 	privatePath := flags.String("private-key", "", "path to the base64 private key; defaults to UPDATE_SIGNING_PRIVATE_KEY_BASE64")
 	version := flags.String("version", "", "semantic companion version")
+	buildVersion := flags.String("build-version", "", "increasing numeric native build version")
 	channelValue := flags.String("channel", "", "stable or beta")
 	publishedValue := flags.String("published-at", "", "RFC3339 publication time")
 	assetsDir := flags.String("assets-dir", "", "directory containing the final companion installers")
@@ -86,6 +88,9 @@ func generate(args []string) error {
 	}
 	if _, err := updatefeed.ParseVersion(*version); err != nil {
 		return err
+	}
+	if parsed, err := strconv.ParseUint(strings.TrimSpace(*buildVersion), 10, 64); err != nil || parsed == 0 {
+		return errors.New("--build-version must be a positive integer")
 	}
 	channel, err := updatefeed.ParseChannel(*channelValue)
 	if err != nil {
@@ -132,17 +137,18 @@ func generate(args []string) error {
 			return fmt.Errorf("read %s: %w", target.assetName, err)
 		}
 		content := renderFeed(feedInput{
-			Version:     *version,
-			Title:       "WoW Markets Companion " + *version,
-			PublishedAt: published.UTC().Format(time.RFC1123Z),
-			NotesURL:    notesURL,
-			AssetURL:    releaseBase + "/" + target.assetName,
-			Length:      len(artifact),
-			Signature:   base64.StdEncoding.EncodeToString(ed25519.Sign(privateKey, artifact)),
-			ContentType: target.contentType,
-			OS:          target.os,
-			Arch:        target.arch,
-			Critical:    *critical,
+			Version:      *version,
+			BuildVersion: strings.TrimSpace(*buildVersion),
+			Title:        "WoW Markets Companion " + *version,
+			PublishedAt:  published.UTC().Format(time.RFC1123Z),
+			NotesURL:     notesURL,
+			AssetURL:     releaseBase + "/" + target.assetName,
+			Length:       len(artifact),
+			Signature:    base64.StdEncoding.EncodeToString(ed25519.Sign(privateKey, artifact)),
+			ContentType:  target.contentType,
+			OS:           target.os,
+			Arch:         target.arch,
+			Critical:     *critical,
 		})
 		signed := appendFeedSignature(content, privateKey)
 		fileName := fmt.Sprintf("companion-%s-%s", channel, target.fileName)
@@ -162,17 +168,18 @@ type feedTarget struct {
 }
 
 type feedInput struct {
-	Version     string
-	Title       string
-	PublishedAt string
-	NotesURL    string
-	AssetURL    string
-	Length      int
-	Signature   string
-	ContentType string
-	OS          string
-	Arch        string
-	Critical    bool
+	Version      string
+	BuildVersion string
+	Title        string
+	PublishedAt  string
+	NotesURL     string
+	AssetURL     string
+	Length       int
+	Signature    string
+	ContentType  string
+	OS           string
+	Arch         string
+	Critical     bool
 }
 
 func renderFeed(input feedInput) []byte {
@@ -194,7 +201,7 @@ func renderFeed(input feedInput) []byte {
     </item>
   </channel>
 </rss>
-`, escape(input.Title), escape(input.PublishedAt), escape(input.Version),
+`, escape(input.Title), escape(input.PublishedAt), escape(input.BuildVersion),
 		escape(input.Version), escape(input.NotesURL), critical, escape(input.AssetURL),
 		input.Length, escape(input.ContentType), escape(input.Signature), escape(input.OS),
 		escape(input.Arch)))

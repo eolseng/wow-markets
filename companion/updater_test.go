@@ -234,6 +234,38 @@ func TestDeferralPersistsAndMandatoryUpdatesCannotBeDeferred(t *testing.T) {
 	}
 }
 
+type recordingPlatformUpdater struct {
+	installedPath string
+}
+
+func (*recordingPlatformUpdater) Start(string) error      { return nil }
+func (*recordingPlatformUpdater) SetFeedURL(string) error { return nil }
+func (*recordingPlatformUpdater) Check() error            { return nil }
+func (*recordingPlatformUpdater) Close()                  {}
+func (*recordingPlatformUpdater) ManagesDownloads() bool  { return false }
+func (updater *recordingPlatformUpdater) Install(path string) error {
+	updater.installedPath = path
+	return nil
+}
+
+func TestDeferredDownloadedUpdateRemainsInstallable(t *testing.T) {
+	native := &recordingPlatformUpdater{}
+	app := &App{
+		nativeUpdater:    native,
+		stagedUpdatePath: "staged-installer.exe",
+		updater: UpdaterSnapshot{
+			ReadyToInstall: true,
+			Status:         updateStatusDeferred,
+		},
+	}
+	if err := app.InstallUpdate(); err != nil {
+		t.Fatalf("InstallUpdate() error = %v", err)
+	}
+	if native.installedPath != "staged-installer.exe" {
+		t.Fatalf("installed path = %q", native.installedPath)
+	}
+}
+
 func signedUpdateFeed(t *testing.T, privateKey ed25519.PrivateKey, version, osName, arch string, length int, artifactSignature, assetURL string) []byte {
 	t.Helper()
 	content := []byte(fmt.Sprintf(`<?xml version="1.0"?>

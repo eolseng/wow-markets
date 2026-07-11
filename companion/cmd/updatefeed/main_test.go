@@ -37,6 +37,7 @@ func TestGenerateCreatesVerifiablePlatformAppcasts(t *testing.T) {
 	if err := generate([]string{
 		"--private-key", keyPath,
 		"--version", "1.1.0-beta.1",
+		"--build-version", "42",
 		"--channel", "beta",
 		"--published-at", "2026-07-11T00:00:00Z",
 		"--assets-dir", assetsDir,
@@ -57,7 +58,7 @@ func TestGenerateCreatesVerifiablePlatformAppcasts(t *testing.T) {
 			t.Fatalf("ParseSigned(%s) error = %v", name, err)
 		}
 		selected, err := updatefeed.Select(releases, "1.0.0", target)
-		if err != nil || selected == nil || selected.Version != "1.1.0-beta.1" {
+		if err != nil || selected == nil || selected.Version != "1.1.0-beta.1" || selected.BuildVersion != "42" {
 			t.Fatalf("Select(%s) = %#v, %v", name, selected, err)
 		}
 	}

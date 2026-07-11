@@ -48,16 +48,17 @@ var (
 )
 
 type Release struct {
-	Version     string
-	Title       string
-	PublishedAt string
-	NotesURL    string
-	URL         string
-	Length      int64
-	Signature   string
-	OS          string
-	Arch        string
-	Mandatory   bool
+	BuildVersion string
+	Version      string
+	Title        string
+	PublishedAt  string
+	NotesURL     string
+	URL          string
+	Length       int64
+	Signature    string
+	OS           string
+	Arch         string
+	Mandatory    bool
 }
 
 type document struct {
@@ -67,12 +68,13 @@ type document struct {
 }
 
 type item struct {
-	Title       string    `xml:"title"`
-	PublishedAt string    `xml:"pubDate"`
-	Version     string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle version"`
-	NotesURL    string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle releaseNotesLink"`
-	Mandatory   *struct{} `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle criticalUpdate"`
-	Enclosure   enclosure `xml:"enclosure"`
+	Title        string    `xml:"title"`
+	PublishedAt  string    `xml:"pubDate"`
+	Version      string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle version"`
+	ShortVersion string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle shortVersionString"`
+	NotesURL     string    `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle releaseNotesLink"`
+	Mandatory    *struct{} `xml:"http://www.andymatuschak.org/xml-namespaces/sparkle criticalUpdate"`
+	Enclosure    enclosure `xml:"enclosure"`
 }
 
 type enclosure struct {
@@ -106,11 +108,15 @@ func ParseSigned(payload []byte, publicKey ed25519.PublicKey) ([]Release, error)
 
 	releases := make([]Release, 0, len(parsed.Channel.Items))
 	for _, candidate := range parsed.Channel.Items {
+		semanticVersion := strings.TrimSpace(candidate.ShortVersion)
+		if semanticVersion == "" {
+			semanticVersion = strings.TrimSpace(candidate.Version)
+		}
 		length, err := strconv.ParseInt(strings.TrimSpace(candidate.Enclosure.Length), 10, 64)
 		if err != nil || length <= 0 {
 			return nil, fmt.Errorf("release %q has an invalid enclosure length", candidate.Version)
 		}
-		if _, err := ParseVersion(candidate.Version); err != nil {
+		if _, err := ParseVersion(semanticVersion); err != nil {
 			return nil, fmt.Errorf("release version: %w", err)
 		}
 		if _, err := url.ParseRequestURI(candidate.Enclosure.URL); err != nil {
@@ -121,16 +127,17 @@ func ParseSigned(payload []byte, publicKey ed25519.PublicKey) ([]Release, error)
 			return nil, fmt.Errorf("release %q has an invalid enclosure signature", candidate.Version)
 		}
 		releases = append(releases, Release{
-			Version:     strings.TrimSpace(candidate.Version),
-			Title:       strings.TrimSpace(candidate.Title),
-			PublishedAt: strings.TrimSpace(candidate.PublishedAt),
-			NotesURL:    strings.TrimSpace(candidate.NotesURL),
-			URL:         strings.TrimSpace(candidate.Enclosure.URL),
-			Length:      length,
-			Signature:   strings.TrimSpace(candidate.Enclosure.Signature),
-			OS:          strings.TrimSpace(candidate.Enclosure.OS),
-			Arch:        strings.TrimSpace(candidate.Enclosure.Arch),
-			Mandatory:   candidate.Mandatory != nil,
+			BuildVersion: strings.TrimSpace(candidate.Version),
+			Version:      semanticVersion,
+			Title:        strings.TrimSpace(candidate.Title),
+			PublishedAt:  strings.TrimSpace(candidate.PublishedAt),
+			NotesURL:     strings.TrimSpace(candidate.NotesURL),
+			URL:          strings.TrimSpace(candidate.Enclosure.URL),
+			Length:       length,
+			Signature:    strings.TrimSpace(candidate.Enclosure.Signature),
+			OS:           strings.TrimSpace(candidate.Enclosure.OS),
+			Arch:         strings.TrimSpace(candidate.Enclosure.Arch),
+			Mandatory:    candidate.Mandatory != nil,
 		})
 	}
 	return releases, nil

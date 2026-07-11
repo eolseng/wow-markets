@@ -38,6 +38,13 @@ if [ "$requested_version" != "$source_version" ]; then
 fi
 if [ "$product" = companion ]; then
   "$repository_root/scripts/release/windows-file-version.sh" "$source_version" >/dev/null
+  build_version=$(tr -d '[:space:]' < "$repository_root/companion/build-version.txt")
+  case "$build_version" in
+    ''|*[!0-9]*|0)
+      echo "companion build version must be a positive integer" >&2
+      exit 1
+      ;;
+  esac
 fi
 if [ -n "$tag" ] && [ "$tag" != "$prefix$source_version" ]; then
   echo "$product tag mismatch: got $tag, expected $prefix$source_version" >&2

@@ -38,6 +38,29 @@ func TestSignedFeedSelectsNewerMatchingTarget(t *testing.T) {
 	}
 }
 
+func TestSignedFeedUsesShortVersionForSemanticSelection(t *testing.T) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifact := []byte("signed installer")
+	signature := base64.StdEncoding.EncodeToString(ed25519.Sign(privateKey, artifact))
+	content := []byte(fmt.Sprintf(`<?xml version="1.0"?>
+<rss version="2.0" xmlns:sparkle="%s" xmlns:wow="%s"><channel><item>
+<title>1.0.0-rc.4</title><sparkle:version>4</sparkle:version><sparkle:shortVersionString>1.0.0-rc.4</sparkle:shortVersionString>
+<enclosure url="https://github.com/eolseng/wow-markets/releases/download/companion-v1.0.0-rc.4/wow-markets-companion-macos-arm64.dmg" length="%d" sparkle:edSignature="%s" sparkle:os="macos" wow:arch="arm64" />
+</item></channel></rss>
+`, sparkleNamespace, wowNamespace, len(artifact), signature))
+	releases, err := ParseSigned(signTestFeed(content, privateKey), publicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	selected, err := Select(releases, "1.0.0-rc.2", TargetMacOSARM64)
+	if err != nil || selected == nil || selected.Version != "1.0.0-rc.4" {
+		t.Fatalf("Select() = %#v, %v", selected, err)
+	}
+}
+
 func TestSignedFeedRejectsTamperingAndWrongLength(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

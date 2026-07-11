@@ -266,6 +266,12 @@ func TestDeferredDownloadedUpdateRemainsInstallable(t *testing.T) {
 	}
 }
 
+func TestWindowsUpdatesUseSilentNSISMode(t *testing.T) {
+	if windowsSilentInstallArguments != "/S" {
+		t.Fatalf("windowsSilentInstallArguments = %q, want /S", windowsSilentInstallArguments)
+	}
+}
+
 func signedUpdateFeed(t *testing.T, privateKey ed25519.PrivateKey, version, osName, arch string, length int, artifactSignature, assetURL string) []byte {
 	t.Helper()
 	content := []byte(fmt.Sprintf(`<?xml version="1.0"?>

@@ -39,6 +39,8 @@ const (
 
 const defaultUpdateChannel = updatefeed.ChannelStable
 
+const windowsSilentInstallArguments = "/S"
+
 var errNoPromotedUpdate = errors.New("no release has been promoted to this update channel")
 
 type UpdaterSnapshot struct {

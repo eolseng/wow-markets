@@ -4,9 +4,9 @@ package main
 
 import (
 	"errors"
-	"os/exec"
 
 	"github.com/eolseng/wow-markets/companion/internal/updatefeed"
+	"golang.org/x/sys/windows"
 )
 
 type windowsPlatformUpdater struct{}
@@ -27,9 +27,13 @@ func (windowsPlatformUpdater) Install(path string) error {
 	if path == "" {
 		return errors.New("staged Windows installer path is empty")
 	}
-	command := exec.Command(path)
-	if err := command.Start(); err != nil {
+	verb, err := windows.UTF16PtrFromString("runas")
+	if err != nil {
 		return err
 	}
-	return command.Process.Release()
+	installer, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	return windows.ShellExecute(0, verb, installer, nil, nil, windows.SW_SHOWNORMAL)
 }

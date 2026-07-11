@@ -50,6 +50,7 @@ type UpdaterSnapshot struct {
 	Mandatory        bool   `json:"mandatory"`
 	Message          string `json:"message"`
 	Progress         int    `json:"progress"`
+	ReadyToInstall   bool   `json:"ready_to_install"`
 	Status           string `json:"status"`
 }
 
@@ -187,9 +188,11 @@ func (app *App) SetUpdateChannel(value string) (UpdaterSnapshot, error) {
 	}
 	app.mu.Lock()
 	app.config = config
+	app.stagedUpdatePath = ""
 	app.updater.Channel = string(channel)
 	app.updater.Status = updateStatusChecking
 	app.updater.Message = "Switching update channel"
+	app.updater.ReadyToInstall = false
 	native := app.nativeUpdater
 	app.mu.Unlock()
 	app.setupMu.Unlock()
@@ -256,7 +259,7 @@ func (app *App) InstallUpdate() error {
 	if native.ManagesDownloads() {
 		return native.Check()
 	}
-	if status != updateStatusReady || path == "" {
+	if (status != updateStatusReady && status != updateStatusDeferred) || path == "" {
 		return errors.New("the update has not finished downloading")
 	}
 	if err := native.Install(path); err != nil {
@@ -284,6 +287,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 		state.Status = updateStatusChecking
 		state.Message = "Checking for updates"
 		state.Progress = 0
+		state.ReadyToInstall = false
 	})
 
 	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -297,6 +301,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 				state.AvailableVersion = ""
 				state.Mandatory = false
 				state.Progress = 0
+				state.ReadyToInstall = false
 				state.LastCheckedAt = time.Now().UTC().Format(time.RFC3339)
 			})
 			return
@@ -316,6 +321,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 			state.AvailableVersion = ""
 			state.Mandatory = false
 			state.Progress = 0
+			state.ReadyToInstall = false
 			state.LastCheckedAt = checkedAt
 		})
 		return
@@ -341,6 +347,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 			state.Message = "An update is available and Sparkle is preparing it"
 			state.AvailableVersion = release.Version
 			state.Mandatory = release.Mandatory
+			state.ReadyToInstall = false
 			state.LastCheckedAt = checkedAt
 		})
 		if manual {
@@ -356,6 +363,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 		state.Message = "Downloading the verified update in the background"
 		state.AvailableVersion = release.Version
 		state.Mandatory = release.Mandatory
+		state.ReadyToInstall = false
 		state.LastCheckedAt = checkedAt
 	})
 	downloadCtx, downloadCancel := context.WithTimeout(ctx, 15*time.Minute)
@@ -370,6 +378,7 @@ func (app *App) runUpdateCheck(ctx context.Context, manual bool) {
 	app.updater.Status = updateStatusReady
 	app.updater.Message = "Update verified and ready to install"
 	app.updater.Progress = 100
+	app.updater.ReadyToInstall = true
 	app.mu.Unlock()
 	app.emitSnapshot()
 }

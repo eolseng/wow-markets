@@ -47,7 +47,7 @@ export function deriveUpdaterView(updater = {}) {
     case "ready":
       return { label: updater.mandatory ? "Required" : "Ready", tone: updater.mandatory ? "warning" : "success", message: `${version} is verified and ready to install.`, action: "Install and restart", canDefer: !updater.mandatory, canCheck: true }
     case "deferred":
-      return { label: "Later", tone: "warning", message: `${version} is deferred. Scans and uploads continue normally.`, action: "Review update", canCheck: true }
+      return { label: "Later", tone: "warning", message: `${version} is deferred. Scans and uploads continue normally.`, action: updater.ready_to_install ? "Install and restart" : "Review update", canCheck: true }
     case "offline":
       return { label: "Offline", tone: "warning", message: "Updates could not be checked. Scans and uploads continue normally.", canCheck: true }
     case "error":

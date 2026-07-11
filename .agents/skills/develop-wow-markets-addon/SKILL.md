@@ -1,6 +1,6 @@
 ---
 name: develop-wow-markets-addon
-description: Implement, debug, review, and verify the WoW Markets addon. Use for changes under addon involving Lua capture logic, Auctionator full-scan events, chat UX and slash commands, SavedVariables, queue rotation, Auction House classification, addon identity or packaging, and addon tests.
+description: Implement, debug, review, release, and verify the WoW Markets addon. Use for changes under addon involving Lua capture logic, Auctionator full-scan events, chat UX and slash commands, SavedVariables, queue rotation, Auction House classification, addon identity, CurseForge or Wago distribution, packaging, release metadata, and addon tests.
 ---
 
 # Develop WoW Markets Addon
@@ -74,6 +74,24 @@ Use Lua 5.1 compatibility. For Auctionator events, reload/logout behavior,
 location APIs, or TOC changes, also report the remaining in-game checks. When
 the SavedVariables contract changes, run the companion gate and record the
 public commit required by the service consumer tests.
+
+## Release and distribute
+
+1. Read `docs/releasing-addon.md` completely before changing a version,
+   distribution ID, `.pkgmeta`, or `.github/workflows/addon-release.yml`.
+2. Keep CurseForge project `1605493`, Wago project `qGZOdXNd`, interface
+   `20505`, and the Auctionator dependency synchronized across the TOC,
+   `.pkgmeta`, dashboards, tests, and companion links.
+3. Use `addon-v<version>` tags. Use semantic `alpha` or `beta` labels for
+   prereleases because the pinned BigWigs packager treats other tagged labels,
+   including `rc`, as stable.
+4. Never expose release secrets to pull requests. Keep `CF_API_KEY` and
+   `WAGO_API_TOKEN` in the protected `addon-release` environment.
+5. Validate the BigWigs preflight archive before tagging. Publish only from an
+   exact reviewed `main` commit, approve the protected environment, verify all
+   three channels, then perform the distributed-archive in-game smoke test.
+6. Never replace a published archive or tag. Fix forward with a higher addon
+   version.
 
 ## Maintain this skill
 

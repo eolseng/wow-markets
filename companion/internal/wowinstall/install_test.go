@@ -68,7 +68,7 @@ func TestInspectInstallDetectsAddonAndValidScanFiles(t *testing.T) {
 	root := t.TempDir()
 	marker := AddonMarkerPath(root)
 	mkdirAll(t, filepath.Dir(marker))
-	if err := os.WriteFile(marker, []byte("## Interface: 20504\n"), 0o644); err != nil {
+	if err := os.WriteFile(marker, []byte("## Interface: 20505\n## Version: 0.5.0-beta.1\n"), 0o644); err != nil {
 		t.Fatalf("write addon marker: %v", err)
 	}
 	validScan := writeValidScan(t, root, "ACCOUNT-ONE")
@@ -85,11 +85,27 @@ func TestInspectInstallDetectsAddonAndValidScanFiles(t *testing.T) {
 	if !inspection.AnniversaryPresent || !inspection.AddonPresent {
 		t.Fatalf("InspectInstall() = %+v", inspection)
 	}
+	if inspection.AddonVersion != "0.5.0-beta.1" {
+		t.Fatalf("AddonVersion = %q, want 0.5.0-beta.1", inspection.AddonVersion)
+	}
 	if len(inspection.ScanFiles) != 1 || inspection.ScanFiles[0].Path != validScan {
 		t.Fatalf("ScanFiles = %+v, want only %q", inspection.ScanFiles, validScan)
 	}
 	if inspection.ScanFiles[0].Account != "ACCOUNT-ONE" {
 		t.Fatalf("Account = %q, want ACCOUNT-ONE", inspection.ScanFiles[0].Account)
+	}
+}
+
+func TestInstalledAddonVersionAllowsMissingMetadata(t *testing.T) {
+	root := t.TempDir()
+	marker := AddonMarkerPath(root)
+	mkdirAll(t, filepath.Dir(marker))
+	if err := os.WriteFile(marker, []byte("\ufeff## Interface: 20505\r\n"), 0o644); err != nil {
+		t.Fatalf("write addon marker: %v", err)
+	}
+	version, err := InstalledAddonVersion(root)
+	if err != nil || version != "" {
+		t.Fatalf("InstalledAddonVersion() = %q, %v; want empty version, nil", version, err)
 	}
 }
 

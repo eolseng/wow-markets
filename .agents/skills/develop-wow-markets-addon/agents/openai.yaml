@@ -1,4 +1,4 @@
 interface:
   display_name: "Develop WoW Markets Addon"
-  short_description: "Build and verify the WoW Markets addon"
-  default_prompt: "Use $develop-wow-markets-addon to implement and verify a WoW Markets addon change."
+  short_description: "Build, release, and verify the WoW Markets addon"
+  default_prompt: "Use $develop-wow-markets-addon to implement, release, and verify a WoW Markets addon change."

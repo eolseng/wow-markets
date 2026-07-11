@@ -7,7 +7,7 @@ expected=$(mktemp)
 cleanup() { rm -f "$actual" "$expected"; }
 trap cleanup EXIT INT TERM
 
-unzip -Z1 "$archive" | LC_ALL=C sort > "$actual"
+unzip -Z1 "$archive" | sed '/\/$/d' | LC_ALL=C sort > "$actual"
 printf '%s\n' \
   WoWMarkets/Capture.lua \
   WoWMarkets/Core.lua \

@@ -91,6 +91,17 @@ func TestCurrentStepUsesTokenOnlySetupOrder(t *testing.T) {
 	}
 }
 
+func TestSnapshotIncludesAddonDistributionDetails(t *testing.T) {
+	app := &App{addonDetected: true, addonPath: "/WoWMarkets.toc", addonVersion: "0.5.0-beta.1"}
+	snapshot := app.Snapshot()
+	if snapshot.AddonVersion != "0.5.0-beta.1" || snapshot.AddonPath != "/WoWMarkets.toc" {
+		t.Fatalf("addon snapshot = %+v", snapshot)
+	}
+	if snapshot.AddonCurseForgeURL != addonCurseForgeURL || snapshot.AddonWagoURL != addonWagoURL {
+		t.Fatalf("distribution URLs = %q, %q", snapshot.AddonCurseForgeURL, snapshot.AddonWagoURL)
+	}
+}
+
 func TestNormalizeInstallationToken(t *testing.T) {
 	secret := make([]byte, installationTokenSecretBytes)
 	for index := range secret {

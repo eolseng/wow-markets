@@ -20,6 +20,7 @@ addon-check:
 	@LUA_BIN="$$(command -v lua5.1 || command -v luajit || command -v lua)"; \
 	test -n "$$LUA_BIN" || (echo "Lua 5.1 is required for addon-check" >&2; exit 1); \
 	"$$LUA_BIN" addon/tests/addon_test.lua addon
+	./scripts/release/validate-addon-distribution.sh
 
 companion:
 	cd companion && $(WAILS) dev

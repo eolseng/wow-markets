@@ -18,6 +18,7 @@ type InstallInspection struct {
 	AnniversaryPresent bool        `json:"anniversary_present"`
 	AddonMarkerPath    string      `json:"addon_marker_path"`
 	AddonPresent       bool        `json:"addon_present"`
+	AddonVersion       string      `json:"addon_version"`
 	ScanFiles          []Candidate `json:"scan_files"`
 }
 
@@ -70,6 +71,12 @@ func InspectInstall(root string) (InstallInspection, error) {
 		return inspection, err
 	}
 	inspection.AddonPresent = addonPresent
+	if addonPresent {
+		inspection.AddonVersion, err = InstalledAddonVersion(root)
+		if err != nil {
+			return inspection, err
+		}
+	}
 
 	scanFiles, err := discoverAnniversaryScanFilesInRoot(root)
 	if err != nil {
@@ -122,6 +129,30 @@ func AddonInstalled(root string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("inspect addon marker %s: %w", path, err)
+}
+
+// InstalledAddonVersion returns the Version metadata from the installed
+// WoW Markets TOC. An older or hand-edited TOC without Version metadata is
+// still considered installed and returns an empty version.
+func InstalledAddonVersion(root string) (string, error) {
+	path := AddonMarkerPath(root)
+	if path == "" {
+		return "", nil
+	}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("read addon marker %s: %w", path, err)
+	}
+	for _, line := range strings.Split(string(contents), "\n") {
+		line = strings.TrimSpace(strings.TrimPrefix(line, "\ufeff"))
+		if strings.HasPrefix(line, "## Version:") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "## Version:")), nil
+		}
+	}
+	return "", nil
 }
 
 func directoryExists(path string) (bool, error) {

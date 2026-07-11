@@ -1,0 +1,71 @@
+name: Addon Release
+
+on:
+  push:
+    tags:
+      - addon-v*
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Package and publish addon
+    runs-on: ubuntu-latest
+    environment: addon-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install --yes lua5.1
+
+      - name: Validate tag, metadata, and addon
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version=${RELEASE_TAG#addon-v}
+          ./scripts/release/validate-addon-distribution.sh "$version" "$RELEASE_TAG"
+          make addon-check
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Package and publish to CurseForge and Wago
+        uses: BigWigsMods/packager@6d50adb6e8517eefef63f4afb16a6518166a6b28 # v2.5.1
+        with:
+          args: -u -n "WoWMarkets-${{ env.RELEASE_VERSION }}:${{ env.RELEASE_VERSION }}"
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+
+      - name: Validate packaged archive
+        id: archive
+        shell: bash
+        run: |
+          shopt -s nullglob
+          archives=(.release/*.zip)
+          if (( ${#archives[@]} != 1 )); then
+            printf 'expected exactly one packaged archive, found %d\n' "${#archives[@]}" >&2
+            exit 1
+          fi
+          ./scripts/release/validate-addon-package.sh "${archives[0]}"
+          echo "path=${archives[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Create immutable GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          ARCHIVE: ${{ steps.archive.outputs.path }}
+        run: |
+          version=${RELEASE_TAG#addon-v}
+          gh release create "$RELEASE_TAG" --draft --verify-tag \
+            --title "WoW Markets addon $version" \
+            --notes-file addon/CHANGELOG.md
+          gh release upload "$RELEASE_TAG" "$ARCHIVE"
+          case "$version" in
+            *-*) gh release edit "$RELEASE_TAG" --draft=false --prerelease ;;
+            *) gh release edit "$RELEASE_TAG" --draft=false --latest ;;
+          esac
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq .immutable)" = true

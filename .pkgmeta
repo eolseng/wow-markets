@@ -1,0 +1,34 @@
+package-as: WoWMarkets
+
+manual-changelog:
+  filename: addon/CHANGELOG.md
+  markup-type: markdown
+
+required-dependencies:
+  - auctionator
+
+move-folders:
+  WoWMarkets/addon/WoWMarkets: WoWMarkets
+
+ignore:
+  - .agents
+  - .github
+  - .gitignore
+  - AGENTS.md
+  - CLAUDE.md
+  - CODE_OF_CONDUCT.md
+  - CONTRIBUTING.md
+  - LICENSE
+  - Makefile
+  - PRIVACY.md
+  - README.md
+  - SECURITY.md
+  - THIRD_PARTY_NOTICES.md
+  - companion
+  - contracts
+  - docs
+  - scripts
+  - addon/AGENTS.md
+  - addon/CHANGELOG.md
+  - addon/README.md
+  - addon/tests

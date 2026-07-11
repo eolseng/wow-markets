@@ -16,6 +16,20 @@ jobs:
       - name: Install Lua 5.1
         run: sudo apt-get update && sudo apt-get install --yes lua5.1
       - run: make addon-check
+      - name: Preflight BigWigs package
+        uses: BigWigsMods/packager@6d50adb6e8517eefef63f4afb16a6518166a6b28 # v2.5.1
+        with:
+          args: -d -u
+      - name: Validate preflight archive
+        shell: bash
+        run: |
+          shopt -s nullglob
+          archives=(.release/*.zip)
+          if (( ${#archives[@]} != 1 )); then
+            printf 'expected exactly one preflight archive, found %d\n' "${#archives[@]}" >&2
+            exit 1
+          fi
+          ./scripts/release/validate-addon-package.sh "${archives[0]}"
 
   companion:
     runs-on: macos-26

@@ -86,12 +86,18 @@ public commit required by the service consumer tests.
    prereleases because the pinned BigWigs packager treats other tagged labels,
    including `rc`, as stable.
 4. Never expose release secrets to pull requests. Keep `CF_API_KEY` and
-   `WAGO_API_TOKEN` in the protected `addon-release` environment.
+   `WAGO_API_TOKEN` in the protected `addon-release` environment. Generate the
+   Wago publishing token from the Wago Addons developer API-key page; updater
+   API keys cannot publish.
 5. Validate the BigWigs preflight archive before tagging. Publish only from an
    exact reviewed `main` commit, approve the protected environment, verify all
    three channels, then perform the distributed-archive in-game smoke test.
 6. Never replace a published archive or tag. Fix forward with a higher addon
    version.
+7. Treat uploads as sequential external mutations. If one channel succeeds
+   and a later channel fails, verify the channel states and retry only the
+   missing destinations; never blindly rerun against the successful channel.
+   Revoke any credential exposed in output before continuing.
 
 ## Maintain this skill
 

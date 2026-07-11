@@ -119,8 +119,10 @@ local function GetItemReference(active, info, itemLink)
 end
 
 local function CompactRow(active, sourceRow, entry)
-  entry = entry or {}
-  local info = entry.auctionInfo or {}
+  if type(entry) ~= "table" then
+    entry = {}
+  end
+  local info = type(entry.auctionInfo) == "table" and entry.auctionInfo or {}
 
   return {
     sourceRow,
@@ -258,6 +260,23 @@ local function ProcessBatch()
   end
 
   C_Timer.After(0, ProcessBatch)
+end
+
+function Capture:CompleteNow()
+  local active = self.active
+  if not active then
+    return false
+  end
+
+  for row = active.nextRow, active.sourceRowCount do
+    table.insert(
+      active.scan.rows,
+      CompactRow(active, row, active.rawFullScan[row])
+    )
+  end
+  active.nextRow = active.sourceRowCount + 1
+  Finish()
+  return true
 end
 
 function Capture:Begin(rawFullScan)

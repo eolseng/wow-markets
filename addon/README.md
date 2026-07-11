@@ -4,8 +4,8 @@ WoW Markets piggybacks on Auctionator (a required dependency) so
 contributors never scan twice: when Auctionator's full scan completes, the
 addon compacts the payload in 250-row timer batches and appends a
 SavedVariables format 5 record — the game region and each unique item identity
-stored once per scan. It targets the TBC Classic Anniversary client
-(interface `20505`).
+stored once per scan. It targets the TBC Classic Anniversary 2.5.6 client
+(interface `20506`).
 
 The handoff to the companion app is the account-wide SavedVariables file,
 written when the client reloads its UI or exits normally:
@@ -42,13 +42,14 @@ ln -s /absolute/path/to/addon/WoWMarkets \
 
 ## Slash commands
 
-- `/wm` or `/wm status` — capture progress, stored scan count, and whether the
+- `/wms` or `/wms status` — capture progress, stored scan count, and whether the
   latest scan needs `/reload`.
-- `/wm location` — current zone, subzone, map ID, and Auction House
+- `/wms location` — current zone, subzone, map ID, and Auction House
   classification without scanning.
-- `/wm clear` — request confirmation before emptying the stored scan queue.
+- `/wms clear` — request confirmation before emptying the stored scan queue.
 
-The former `/wms` command remains available as a compatibility alias.
+`/wowmarkets` is also available. `/wm` remains a best-effort compatibility
+alias, but the game client may claim it for its own command.
 
 ## Behavior notes
 
@@ -57,8 +58,10 @@ The former `/wms` command remains available as a compatibility alias.
   would discard one captured during the current session. Keep the companion
   running and type `/reload` after capturing so WoW writes the latest scan.
 - An in-progress capture lives only in memory; only `ready` scans reach
-  SavedVariables. A new Auctionator scan is ignored while a capture is active,
-  and a capture is dropped entirely if the game region cannot be determined.
+  SavedVariables. The addon finishes any remaining compaction synchronously
+  when the game exits so a completed Auctionator scan is not lost. A new
+  Auctionator scan is ignored while a capture is active, and a capture is
+  dropped entirely if the game region cannot be determined.
 - At completion the addon records zone, subzone, and Classic UI map ID.
   Stranglethorn Vale/Booty Bay, Tanaris/Gadgetzan, and Winterspring/Everlook
   classify as neutral Auction Houses; everywhere else is the player's faction

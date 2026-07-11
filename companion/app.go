@@ -15,7 +15,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const snapshotEventName = "companion:snapshot"
+const (
+	snapshotEventName  = "companion:snapshot"
+	addonCurseForgeURL = "https://www.curseforge.com/wow/addons/wow-markets"
+	addonWagoURL       = "https://addons.wago.io/addons/wow-markets"
+)
 
 type App struct {
 	mu       sync.Mutex
@@ -39,6 +43,7 @@ type App struct {
 	wowDetected    bool
 	addonDetected  bool
 	addonPath      string
+	addonVersion   string
 
 	launchAtLogin          bool
 	launchAtLoginSupported bool
@@ -205,6 +210,9 @@ type Snapshot struct {
 	ActivityKind           string                 `json:"activity_kind"`
 	AddonDetected          bool                   `json:"addon_detected"`
 	AddonPath              string                 `json:"addon_path"`
+	AddonVersion           string                 `json:"addon_version"`
+	AddonCurseForgeURL     string                 `json:"addon_curseforge_url"`
+	AddonWagoURL           string                 `json:"addon_wago_url"`
 	ArchivedCount          int                    `json:"archived_count"`
 	Configured             bool                   `json:"configured"`
 	CurrentStep            string                 `json:"current_step"`
@@ -563,6 +571,25 @@ func (app *App) OpenInstallationsPage() error {
 	return nil
 }
 
+func (app *App) OpenCurseForgeAddonPage() error {
+	return app.openExternalURL(addonCurseForgeURL)
+}
+
+func (app *App) OpenWagoAddonPage() error {
+	return app.openExternalURL(addonWagoURL)
+}
+
+func (app *App) openExternalURL(url string) error {
+	app.mu.Lock()
+	ctx := app.ctx
+	app.mu.Unlock()
+	if ctx == nil {
+		return errors.New("application is not ready")
+	}
+	runtime.BrowserOpenURL(ctx, url)
+	return nil
+}
+
 func (app *App) SetLaunchAtLogin(enabled bool) (Snapshot, error) {
 	if !platformLaunchAtLoginSupported() {
 		err := errors.New("launch at login is supported on macOS and Windows")
@@ -757,6 +784,7 @@ func (app *App) refreshSetupLocked() (Snapshot, error) {
 	app.wowDetected = inspection.AnniversaryPresent
 	app.addonDetected = inspection.AddonPresent
 	app.addonPath = inspection.AddonMarkerPath
+	app.addonVersion = inspection.AddonVersion
 	snapshot := app.snapshotLocked()
 	app.mu.Unlock()
 	return snapshot, nil
@@ -875,6 +903,9 @@ func (app *App) snapshotLocked() Snapshot {
 		ActivityKind:           app.activityKind,
 		AddonDetected:          app.addonDetected,
 		AddonPath:              app.addonPath,
+		AddonVersion:           app.addonVersion,
+		AddonCurseForgeURL:     addonCurseForgeURL,
+		AddonWagoURL:           addonWagoURL,
 		ArchivedCount:          app.archivedCount,
 		Configured:             ready,
 		CurrentStep:            currentStep(app.initializing, app.token != "", app.wowDetected, app.addonDetected, app.config.ScanFilePath != ""),

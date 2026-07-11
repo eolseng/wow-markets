@@ -17,6 +17,13 @@ World of Warcraft/_anniversary_/WTF/Account/<ACCOUNT>/SavedVariables/WoWMarkets.
 The record layout is documented in
 [contracts/saved-variables/v5/specification.md](../contracts/saved-variables/v5/specification.md).
 
+## Install
+
+Install WoW Markets through
+[CurseForge](https://www.curseforge.com/wow/addons/wow-markets) or
+[Wago](https://addons.wago.io/addons/wow-markets). The companion detects the
+installed version but never installs, updates, or modifies the addon.
+
 ## Upgrade from WowMarketScan
 
 Remove the old `Interface/AddOns/WowMarketScan` folder before installing
@@ -70,3 +77,6 @@ root:
 ```sh
 make addon-check
 ```
+
+Release operators should also follow
+[`docs/releasing-addon.md`](../docs/releasing-addon.md).

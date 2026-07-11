@@ -1,8 +1,9 @@
 # Release operations
 
 Companion and addon versions are independent semantic versions. This document
-is the operator runbook for companion releases; addon releases use their own
-workflow and `addon/WoWMarkets/WoWMarkets.toc` version.
+is the operator runbook for companion releases. Use
+[`docs/releasing-addon.md`](releasing-addon.md) for the addon workflow and
+`addon/WoWMarkets/WoWMarkets.toc` version.
 
 ## Companion version sources
 

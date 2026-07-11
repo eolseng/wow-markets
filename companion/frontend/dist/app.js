@@ -176,7 +176,9 @@ function renderSetup(snapshot, currentStep) {
   const checks = [
     ["token", snapshot.token_stored, snapshot.token_prefix ? `Stored · ${snapshot.token_prefix}…` : "Required"],
     ["wow", snapshot.wow_detected, snapshot.wow_detected ? basename(snapshot.wow_install_path) : "Required"],
-    ["addon", snapshot.addon_detected, snapshot.addon_detected ? "Installed" : "Required"],
+    ["addon", snapshot.addon_detected, snapshot.addon_detected
+      ? snapshot.addon_version ? `v${snapshot.addon_version}` : "Installed"
+      : "Required"],
     ["saved-variables", snapshot.saved_variables_detected, snapshot.saved_variables_detected ? `${snapshot.scan_file_count || 1} found` : "Required"],
   ]
   for (const [name, complete, detail] of checks) {
@@ -273,7 +275,9 @@ function renderSettings(snapshot) {
 
   elements.settingsWowPath.textContent = snapshot.wow_install_path || "Not detected"
   setBadge(elements.settingsWowStatus, snapshot.wow_detected ? "Detected" : "Missing", snapshot.wow_detected ? "success" : "warning")
-  elements.settingsAddonState.textContent = snapshot.addon_detected ? "Installed" : "Not found"
+  elements.settingsAddonState.textContent = snapshot.addon_detected
+    ? snapshot.addon_version ? `Installed · v${snapshot.addon_version}` : "Installed · Version unavailable"
+    : "Not found"
   elements.settingsScanState.textContent = snapshot.saved_variables_detected
     ? `${snapshot.scan_file_count || 1} SavedVariables file${(snapshot.scan_file_count || 1) === 1 ? "" : "s"}`
     : "Waiting for scan data"
@@ -523,6 +527,12 @@ elements.removeTokenConfirmButton.addEventListener("click", () => {
 
 for (const selector of ["#get-token-button", "#settings-open-token-button"]) {
   $(selector).addEventListener("click", () => run(() => backend().OpenInstallationsPage()))
+}
+for (const selector of ["#setup-curseforge-button", "#settings-curseforge-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().OpenCurseForgeAddonPage()))
+}
+for (const selector of ["#setup-wago-button", "#settings-wago-button"]) {
+  $(selector).addEventListener("click", () => run(() => backend().OpenWagoAddonPage()))
 }
 for (const selector of ["#auto-detect-button", "#settings-auto-detect-button"]) {
   $(selector).addEventListener("click", () => run(() => backend().AutoDetectWowFolder()))

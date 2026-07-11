@@ -105,7 +105,11 @@
             <div class="setup-action" data-setup-panel="addon" hidden>
               <p>Install the <strong>WoW Markets</strong> addon for the Anniversary client, then check again.</p>
               <div class="path-box"><span>Expected file</span><code id="expected-addon-path">—</code></div>
-              <button data-action id="addon-check-button" type="button">Check again</button>
+              <div class="button-row">
+                <button data-action id="setup-curseforge-button" type="button">Get on CurseForge</button>
+                <button class="secondary-button" data-action id="setup-wago-button" type="button">Get on Wago</button>
+                <button class="secondary-button" data-action id="addon-check-button" type="button">Check again</button>
+              </div>
             </div>
 
             <div class="setup-action" data-setup-panel="saved_variables" hidden>
@@ -192,6 +196,8 @@
             <div class="settings-actions">
               <button class="secondary-button" data-action id="settings-auto-detect-button" type="button">Auto-detect</button>
               <button class="secondary-button" data-action id="settings-choose-wow-button" type="button">Change folder</button>
+              <button class="secondary-button" data-action id="settings-curseforge-button" type="button">CurseForge</button>
+              <button class="secondary-button" data-action id="settings-wago-button" type="button">Wago</button>
             </div>
             <div class="account-list" id="account-list" hidden></div>
           </div>

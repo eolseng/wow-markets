@@ -1,4 +1,9 @@
 /build/*
+!/build/windows/
+/build/windows/*
+!/build/windows/installer/
+/build/windows/installer/*
+!/build/windows/installer/project.nsi
 !/build/darwin/
 /build/darwin/*
 !/build/darwin/Info.plist

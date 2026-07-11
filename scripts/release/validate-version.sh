@@ -36,6 +36,9 @@ if [ "$requested_version" != "$source_version" ]; then
   echo "$product version mismatch: requested $requested_version, source has $source_version" >&2
   exit 1
 fi
+if [ "$product" = companion ]; then
+  "$repository_root/scripts/release/windows-file-version.sh" "$source_version" >/dev/null
+fi
 if [ -n "$tag" ] && [ "$tag" != "$prefix$source_version" ]; then
   echo "$product tag mismatch: got $tag, expected $prefix$source_version" >&2
   exit 1

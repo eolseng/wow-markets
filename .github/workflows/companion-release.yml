@@ -26,6 +26,7 @@ jobs:
     outputs:
       channel: ${{ steps.version.outputs.channel }}
       version: ${{ steps.version.outputs.version }}
+      windows_file_version: ${{ steps.version.outputs.windows_file_version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -48,6 +49,8 @@ jobs:
         run: |
           ./scripts/release/validate-version.sh companion "$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          windows_file_version=$(./scripts/release/windows-file-version.sh "$VERSION")
+          echo "windows_file_version=$windows_file_version" >> "$GITHUB_OUTPUT"
           case "$VERSION" in
             *-*) echo "channel=beta" >> "$GITHUB_OUTPUT" ;;
             *) echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
@@ -230,6 +233,7 @@ jobs:
       PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
       INSTALLATIONS_URL: ${{ vars.INSTALLATIONS_URL }}
       UPDATE_ORIGIN: ${{ vars.UPDATE_ORIGIN }}
+      WOW_WINDOWS_FILE_VERSION: ${{ needs.validate.outputs.windows_file_version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -259,6 +263,9 @@ jobs:
           }
           if ($env:UPDATE_ORIGIN -ne "https://updates.wowmarkets.app") {
             throw "trusted update origin is required"
+          }
+          if ($env:WOW_WINDOWS_FILE_VERSION -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            throw "numeric Windows file version is required"
           }
           $ldflags = "-X main.officialAPIURL=$env:PRODUCTION_API_URL -X main.officialInstallationsURL=$env:INSTALLATIONS_URL -X main.officialUpdateOrigin=$env:UPDATE_ORIGIN"
           go run github.com/wailsapp/wails/v2/cmd/wails@v2.13.0 build -clean -platform windows/amd64 -nsis -ldflags $ldflags

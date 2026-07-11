@@ -6,6 +6,7 @@ check: contract-check addon-check companion-check
 
 release-check:
 	./scripts/release/validate-version.sh companion "$$(jq -r .info.productVersion companion/wails.json)"
+	./scripts/release/test-windows-file-version.sh
 	./scripts/release/validate-version.sh addon "$$(awk -F ': ' '/^## Version: / { print $$2; exit }' addon/WoWMarkets/WoWMarkets.toc)"
 	./scripts/release/package-addon.sh dist/wow-markets-addon.zip
 

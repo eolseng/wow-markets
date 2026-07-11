@@ -7,6 +7,9 @@ Audited 2026-07-10 against `companion/go.mod` and `companion/go.sum`.
   MIT or BSD-2-Clause, apart from this project's own Apache-2.0 packages.
 - The vendored `github.com/ra1phdd/systray-on-wails` fork is Apache-2.0. Its
   license is retained beside the source.
+- The customized NSIS project is derived from the Wails 2.13.0 installer
+  template under the MIT License. The retained license is stored under
+  `companion/third_party/wails/`.
 - Auctionator is a runtime dependency of the addon and is not redistributed.
 - Official macOS builds redistribute the pinned Sparkle 2.9.4 binary
   distribution under its MIT License. The release workflow verifies archive

@@ -14,6 +14,12 @@ GitHub provenance/SBOM attestations. It also signs the platform appcasts with
 the protected `UPDATE_SIGNING_PRIVATE_KEY_BASE64` secret. Prerelease semantic
 versions generate beta feeds; ordinary versions generate stable feeds.
 
+Windows fixed-file metadata requires four numeric components. Release
+validation maps `X.Y.Z-rc.N` to `X.Y.Z.N` and stable `X.Y.Z` to
+`X.Y.Z.65535` while preserving the semantic version in the application,
+installer display metadata, tag, and signed appcast. Other prerelease labels
+are rejected until an ordered numeric mapping is defined.
+
 Before a dry run:
 
 1. Confirm all release secrets exist at environment scope, not repository

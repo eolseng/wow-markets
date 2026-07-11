@@ -1,5 +1,10 @@
 # WoW Markets addon changelog
 
+## 0.5.0-beta.3
+
+- Make chat messages shorter and use `/wms` as the concise command entrypoint.
+- Add a WoW Markets icon to the in-game addon list.
+
 ## 0.5.0-beta.2
 
 - Support the Burning Crusade Classic Anniversary 2.5.6 client (interface

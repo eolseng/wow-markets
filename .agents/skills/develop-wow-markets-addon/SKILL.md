@@ -18,6 +18,8 @@ description: Implement, debug, review, release, and verify the WoW Markets addon
 ## Preserve the addon identity
 
 - Keep the installed addon at `addon/WoWMarkets` with `WoWMarkets.toc`.
+- Keep the packaged `Icon.tga` synchronized with the deterministic generator
+  at `scripts/generate-addon-icon.go` and the TOC `IconTexture` metadata.
 - Keep the Lua namespace `WoWMarkets`, SavedVariables global
   `WOW_MARKETS_DB`, and generated file `WoWMarkets.lua` aligned with companion
   discovery.
@@ -93,6 +95,8 @@ then verify the persisted record has the release `addonVersion`.
    dependency synchronized across the TOC, `.pkgmeta`, dashboards, tests, and
    companion links. Confirm the interface from the installed client's
    `.build.info` and a current compatible addon's TOC when the game updates.
+   Keep the archive limited to `WoWMarkets.toc`, `Core.lua`, `Capture.lua`, and
+   `Icon.tga` beneath the `WoWMarkets/` directory.
 3. Use `addon-v<version>` tags. Use semantic `alpha` or `beta` labels for
    prereleases because the pinned BigWigs packager treats other tagged labels,
    including `rc`, as stable.

@@ -83,3 +83,9 @@ make addon-check
 
 Release operators should also follow
 [`docs/releasing-addon.md`](../docs/releasing-addon.md).
+
+Regenerate the addon-list icon from the repository root with:
+
+```sh
+go run scripts/generate-addon-icon.go
+```

@@ -12,11 +12,12 @@ cleanup() { rm -rf "$stage"; }
 trap cleanup EXIT INT TERM
 
 mkdir -p "$stage/WoWMarkets" "$(dirname -- "$output")"
-for file in WoWMarkets.toc Core.lua Capture.lua; do
+for file in WoWMarkets.toc Core.lua Capture.lua Icon.tga; do
   cp "$repository_root/addon/WoWMarkets/$file" "$stage/WoWMarkets/$file"
   touch -t 198001010000 "$stage/WoWMarkets/$file"
 done
 rm -f "$output"
 (cd "$stage" && zip -X -q "$output" \
-  WoWMarkets/WoWMarkets.toc WoWMarkets/Core.lua WoWMarkets/Capture.lua)
+  WoWMarkets/WoWMarkets.toc WoWMarkets/Core.lua WoWMarkets/Capture.lua \
+  WoWMarkets/Icon.tga)
 "$repository_root/scripts/release/validate-addon-package.sh" "$output"

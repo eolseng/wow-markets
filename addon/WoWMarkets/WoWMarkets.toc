@@ -2,9 +2,10 @@
 ## Title: WoW Markets
 ## Notes: Contributes Auctionator full scans to WoW Markets.
 ## Author: eolseng
-## Version: 0.5.0-beta.2
+## Version: 0.5.0-beta.3
 ## Dependencies: Auctionator
 ## SavedVariables: WOW_MARKETS_DB
+## IconTexture: Interface\AddOns\WoWMarkets\Icon
 ## X-Curse-Project-ID: 1605493
 ## X-Wago-ID: qGZOdXNd
 ## X-Website: https://wowmarkets.app

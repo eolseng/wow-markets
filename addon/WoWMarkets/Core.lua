@@ -113,7 +113,7 @@ Frame:SetScript("OnEvent", function(_, event, loadedAddon)
   local _, resetDatabase, removedScans = InitializeDatabase()
 
   if resetDatabase then
-    Print("Stored data used an unsupported format and was reset.", "warning")
+    Print("Saved data was reset because its format is unsupported.", "warning")
   elseif removedScans > 0 then
     Print(
       FormatNumber(removedScans) .. " incompatible stored scan(s) were removed.",
@@ -123,7 +123,7 @@ Frame:SetScript("OnEvent", function(_, event, loadedAddon)
 
   if not Auctionator or not Auctionator.EventBus then
     WoWMarkets.CaptureEnabled = false
-    Print("Auctionator is unavailable; scan capture is disabled.", "error")
+    Print("Auctionator is unavailable. Scan capture is disabled.", "error")
     return
   end
 
@@ -140,7 +140,7 @@ Frame:SetScript("OnEvent", function(_, event, loadedAddon)
   if not registered then
     WoWMarkets.CaptureEnabled = false
     Print(
-      "Auctionator scan listener failed to start: " .. tostring(registerError),
+      "Could not start Auctionator scan capture: " .. tostring(registerError),
       "error"
     )
     return
@@ -148,8 +148,7 @@ Frame:SetScript("OnEvent", function(_, event, loadedAddon)
 
   WoWMarkets.CaptureEnabled = true
   Print(
-    "Ready. Version " .. GetAddonVersion() ..
-    ". Run an Auctionator full scan at the Auction House; use /wms status for progress."
+    "Ready with " .. GetAddonVersion() .. ". Use /wms for commands."
   )
 end)
 
@@ -162,12 +161,12 @@ SlashCmdList.WOWMARKETS = function(command)
   if normalized == "clear" then
     local count = #WOW_MARKETS_DB.pendingScans
     if count == 0 then
-      Print("There are no stored scans to clear.")
+      Print("No stored scans to clear.")
       return
     end
     Print(
-      "This will remove " .. FormatNumber(count) ..
-      " stored scan(s). Type /wms clear confirm to continue.",
+      "Clear " .. FormatNumber(count) ..
+      " stored scan(s)? Type /wms clear confirm.",
       "warning"
     )
     return
@@ -181,7 +180,7 @@ SlashCmdList.WOWMARKETS = function(command)
 
   if normalized == "status" or normalized == "" then
     if WoWMarkets.CaptureEnabled == false then
-      Print("Capture is disabled because Auctionator is unavailable.", "error")
+      Print("Capture disabled: Auctionator is unavailable.", "error")
     else
       Print(WoWMarkets.Capture:GetStatus())
     end
@@ -206,7 +205,7 @@ SlashCmdList.WOWMARKETS = function(command)
     return
   end
 
-  Print("Commands: /wms status or /wms location.")
+  Print("Commands: /wms status, /wms location, /wms clear.")
 end
 
 WoWMarkets.AddonName = ADDON_NAME

@@ -33,8 +33,8 @@ workflow requires it.
 
 1. Run `make addon-check` and `make release-check` from the repository root.
 2. Confirm the CI addon job packages a preflight archive and validates that it
-   contains exactly `WoWMarkets.toc`, `Core.lua`, and `Capture.lua` beneath one
-   `WoWMarkets/` directory.
+   contains exactly `WoWMarkets.toc`, `Core.lua`, `Capture.lua`, and `Icon.tga`
+   beneath one `WoWMarkets/` directory.
 3. Merge the reviewed version and changelog change to `main`. Release only an
    exact, clean `main` commit.
 4. Create and push the tag:

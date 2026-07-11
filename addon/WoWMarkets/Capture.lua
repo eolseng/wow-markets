@@ -214,26 +214,26 @@ local function Finish()
   local duration = string.format("%.1fs", scan.exportDurationMs / 1000)
   WoWMarkets.Print(
     "Scan ready: " .. WoWMarkets.FormatNumber(scan.exportedRowCount) ..
-    " listings processed in " .. duration ..
-    ". Type /reload or log out to send it to WoW Markets Companion."
+    " listings in " .. duration ..
+    ". Use /reload or log out to send it to the companion."
   )
 
   if removedScan then
     if Capture.sessionScans[removedScan] then
       Capture.sessionScans[removedScan] = nil
       WoWMarkets.Print(
-        "An earlier scan from this session was replaced before /reload.",
+        "An unsaved scan was replaced. Use /reload after each scan.",
         "warning"
       )
     else
-      WoWMarkets.Print("The oldest stored scan was rotated out to keep the latest scans.")
+      WoWMarkets.Print("Oldest stored scan removed to keep the latest scans.")
     end
   end
 
   if Capture.capturesThisSession == WOW_MARKETS_DB.config.maxPendingScans then
     WoWMarkets.Print(
       WoWMarkets.FormatNumber(Capture.capturesThisSession) ..
-      " scans were captured this session. Type /reload before scanning again.",
+      " scans captured. Use /reload before scanning again.",
       "warning"
     )
   end
@@ -282,14 +282,14 @@ end
 function Capture:Begin(rawFullScan)
   if self.active then
     WoWMarkets.Print(
-      "A scan was ignored because another capture is still being prepared.",
+      "Scan ignored: another scan is still being prepared.",
       "warning"
     )
     return
   end
 
   if type(rawFullScan) ~= "table" then
-    WoWMarkets.Print("Auctionator returned an invalid scan; nothing was captured.", "error")
+    WoWMarkets.Print("Scan failed: Auctionator returned invalid data.", "error")
     return
   end
 
@@ -297,7 +297,7 @@ function Capture:Begin(rawFullScan)
   local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   local scanner = GetScannerIdentity()
   if scanner.region == "unknown" then
-    WoWMarkets.Print("The game region could not be determined; nothing was captured.", "error")
+    WoWMarkets.Print("Scan failed: game region is unknown.", "error")
     return
   end
   local location = GetCaptureLocation()
@@ -342,9 +342,8 @@ function Capture:Begin(rawFullScan)
   }
 
   WoWMarkets.Print(
-    "Auctionator scan complete. Preparing " ..
-    WoWMarkets.FormatNumber(sourceRowCount) ..
-    " listings - please keep the game open."
+    "Preparing " .. WoWMarkets.FormatNumber(sourceRowCount) ..
+    " listings. Keep WoW open."
   )
 
   if sourceRowCount == 0 then
@@ -368,11 +367,11 @@ function Capture:GetStatus()
     local count = #WOW_MARKETS_DB.pendingScans
     local label = count == 1 and "scan" or "scans"
     if self.needsHandoff then
-      return "Ready | " .. WoWMarkets.FormatNumber(count) .. " " .. label ..
-        " stored | latest scan needs /reload"
+      return "Ready: " .. WoWMarkets.FormatNumber(count) .. " " .. label ..
+        " stored. Latest needs /reload."
     end
-    return "Ready | " .. WoWMarkets.FormatNumber(count) .. " " .. label ..
-      " stored | run an Auctionator full scan"
+    return "Ready: " .. WoWMarkets.FormatNumber(count) .. " " .. label ..
+      " stored. Run an Auctionator full scan."
   end
 
   local processed = math.min(self.active.nextRow - 1, self.active.sourceRowCount)
@@ -380,7 +379,7 @@ function Capture:GetStatus()
   if self.active.sourceRowCount > 0 then
     percent = math.floor(processed / self.active.sourceRowCount * 100 + 0.5)
   end
-  return "Preparing scan | " .. WoWMarkets.FormatNumber(processed) .. " / " ..
+  return "Preparing: " .. WoWMarkets.FormatNumber(processed) .. " / " ..
     WoWMarkets.FormatNumber(self.active.sourceRowCount) ..
     " listings (" .. percent .. "%)"
 end

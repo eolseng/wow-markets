@@ -139,9 +139,8 @@ assert(loadfile(addonRoot .. "/WoWMarkets/Capture.lua"))()
 
 addonFrame.callback(nil, "ADDON_LOADED", "WoWMarkets")
 AssertContains(LastMessage(), "WoW Markets:", "display name")
-AssertContains(LastMessage(), "Ready.", "first-run message")
-AssertContains(LastMessage(), "Version test-addon", "startup version")
-AssertContains(LastMessage(), "/wms status", "startup command hint")
+AssertContains(LastMessage(), "Ready with test-addon", "startup version")
+AssertContains(LastMessage(), "Use /wms for commands", "startup command hint")
 AssertEqual(SLASH_WOWMARKETS1, "/wms", "primary slash command")
 AssertEqual(SLASH_WOWMARKETS2, "/wowmarkets", "long slash command")
 AssertEqual(SLASH_WOWMARKETS3, "/wm", "best-effort legacy slash command")
@@ -150,7 +149,7 @@ AssertEqual(WoWMarkets.FormatNumber(1234567), "1,234,567", "listing count format
 assert(registeredListener, "Auctionator listener was not registered")
 
 SlashCmdList.WOWMARKETS(" status ")
-AssertContains(LastMessage(), "Ready | 0 scans stored", "trimmed status command")
+AssertContains(LastMessage(), "Ready: 0 scans stored", "trimmed status command")
 
 SlashCmdList.WOWMARKETS("location")
 AssertContains(LastMessage(), "Neutral AH - Booty Bay, Stranglethorn Vale", "location message")
@@ -181,11 +180,11 @@ RunNextTimer()
 SlashCmdList.WOWMARKETS("status")
 AssertContains(LastMessage(), "250 / 501 listings (50%)", "capture progress status")
 RunAllTimers()
-AssertContains(LastMessage(), "Type /reload or log out", "capture handoff message")
+AssertContains(LastMessage(), "Use /reload or log out", "capture handoff message")
 AssertEqual(#WOW_MARKETS_DB.pendingScans, 1, "stored scan count")
 
 SlashCmdList.WOWMARKETS("status")
-AssertContains(LastMessage(), "latest scan needs /reload", "ready status")
+AssertContains(LastMessage(), "Latest needs /reload", "ready status")
 
 SlashCmdList.WOWMARKETS("clear")
 AssertEqual(#WOW_MARKETS_DB.pendingScans, 1, "clear requires confirmation")
@@ -199,10 +198,10 @@ for _ = 1, 3 do
   RunAllTimers()
 end
 AssertEqual(#WOW_MARKETS_DB.pendingScans, 2, "queue limit")
-AssertContains(LastMessage(), "earlier scan from this session", "same-session eviction warning")
+AssertContains(LastMessage(), "unsaved scan was replaced", "same-session eviction warning")
 
 SlashCmdList.WOWMARKETS("unknown")
-AssertContains(LastMessage(), "/wms status or /wms location", "concise command help")
+AssertContains(LastMessage(), "/wms status, /wms location, /wms clear", "concise command help")
 
 registeredListener:ReceiveEvent("get_all_scan_complete", rawScan)
 RunNextTimer()
@@ -220,6 +219,6 @@ WOW_MARKETS_DB = {
 addonFrame.callback(nil, "ADDON_LOADED", "WoWMarkets")
 AssertEqual(type(WOW_MARKETS_DB.config), "table", "config normalization")
 AssertEqual(type(WOW_MARKETS_DB.pendingScans), "table", "queue normalization")
-AssertContains(LastMessage(), "Ready. Version test-addon", "startup message on later runs")
+AssertContains(LastMessage(), "Ready with test-addon", "startup message on later runs")
 
 print("addon tests passed")

@@ -164,6 +164,13 @@
               <button class="secondary-button" id="replace-token-button" type="button" aria-controls="settings-token-form" aria-expanded="false">Replace</button>
               <button class="danger-button" data-action id="remove-token-button" type="button">Forget</button>
             </div>
+            <div class="token-removal-confirmation" id="remove-token-confirmation" role="group" aria-label="Confirm forgetting installation token" hidden>
+              <p><strong>Forget this token on this device?</strong><span>This does not revoke it or remove local scan history.</span></p>
+              <div class="confirmation-actions">
+                <button class="secondary-button" data-action id="remove-token-cancel-button" type="button">Cancel</button>
+                <button class="danger-button" data-action id="remove-token-confirm-button" type="button">Forget token</button>
+              </div>
+            </div>
             <form class="settings-token-form" id="settings-token-form" hidden>
               <label for="settings-token-input">Paste a replacement token</label>
               <div class="input-action">

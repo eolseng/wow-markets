@@ -317,7 +317,13 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
 .settings-copy { min-width: 0; }
 .settings-copy h2, .settings-copy strong { margin: 0; color: #e4e9f1; font-size: 12px; }
 .settings-copy p, .settings-copy small { display: block; overflow-wrap: anywhere; margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
-.settings-actions, .diagnostic-grid, .settings-token-form, .settings-note, .account-list, .update-channel { grid-column: 1 / -1; }
+.settings-actions, .diagnostic-grid, .settings-token-form, .settings-note, .account-list, .update-channel, .token-removal-confirmation { grid-column: 1 / -1; }
+.token-removal-confirmation { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid rgba(244,173,85,.25); border-radius: 9px; background: var(--amber-soft); padding: 10px; }
+.token-removal-confirmation p { display: grid; gap: 3px; margin: 0; }
+.token-removal-confirmation strong { color: #f5d6ad; font-size: 11px; }
+.token-removal-confirmation span { color: var(--muted); font-size: 9px; line-height: 1.35; }
+.confirmation-actions { display: flex; flex: 0 0 auto; gap: 7px; }
+.confirmation-actions button { min-height: 32px; padding-inline: 11px; }
 .diagnostic-grid { display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 7px 10px; border: 1px solid var(--border); border-radius: 9px; background: rgba(4,9,17,.3); padding: 9px 10px; }
 .diagnostic-grid span { color: var(--faint); font-size: 9px; }
 .diagnostic-grid strong { overflow-wrap: anywhere; color: #b9c4d3; font-size: 9px; font-weight: 700; }
@@ -350,6 +356,8 @@ code { color: #c5d0e0; font-family: ui-monospace, SFMono-Regular, Menlo, monospa
   .dashboard-grid { grid-template-columns: 1fr; }
   .update-notice { grid-template-columns: auto minmax(0, 1fr); }
   .update-notice button { grid-column: 1 / -1; width: 100%; }
+  .token-removal-confirmation { align-items: stretch; flex-direction: column; }
+  .confirmation-actions button { flex: 1; }
   .counts-panel { min-height: 64px; }
   .setup-check { padding-inline: 7px; }
   .setup-check > div { display: none; }

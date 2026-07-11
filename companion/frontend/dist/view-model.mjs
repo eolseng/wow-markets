@@ -60,6 +60,15 @@ export function deriveUpdaterView(updater = {}) {
   }
 }
 
+export function deriveTokenRemovalView(tokenStored, confirmationOpen) {
+  const confirming = Boolean(tokenStored && confirmationOpen)
+  return {
+    canRemove: Boolean(tokenStored),
+    showConfirmation: confirming,
+    showTrigger: !confirming,
+  }
+}
+
 export function deriveView(snapshot, now = Date.now()) {
   if (!snapshot || snapshot.initializing) {
     return {

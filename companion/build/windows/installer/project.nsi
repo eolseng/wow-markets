@@ -57,6 +57,8 @@ ManifestDPIAware true
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchCompanionAsUser
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
@@ -88,6 +90,26 @@ ShowInstDetails show # This will always show the installation details.
 
 Function .onInit
    !insertmacro wails.checkArchitecture
+   IfSilent update_delay init_done
+   update_delay:
+      # Give the running companion time to exit before replacing its binary.
+      Sleep 1500
+   init_done:
+FunctionEnd
+
+Function LaunchCompanionAsUser
+    # The installer is elevated. Ask the existing Explorer shell to launch the
+    # companion with the interactive user's normal token after installation.
+    nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -Command "$$shell = New-Object -ComObject Shell.Application; $$shell.ShellExecute($\"$INSTDIR\${PRODUCT_EXECUTABLE}$\", $\"$\", $\"$INSTDIR$\", $\"open$\", 1)"'
+    Pop $0
+    Pop $1
+FunctionEnd
+
+Function .onInstSuccess
+    IfSilent launch_after_update done
+    launch_after_update:
+        Call LaunchCompanionAsUser
+    done:
 FunctionEnd
 
 Section

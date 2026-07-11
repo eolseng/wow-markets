@@ -35,5 +35,9 @@ func (windowsPlatformUpdater) Install(path string) error {
 	if err != nil {
 		return err
 	}
-	return windows.ShellExecute(0, verb, installer, nil, nil, windows.SW_SHOWNORMAL)
+	parameters, err := windows.UTF16PtrFromString(windowsSilentInstallArguments)
+	if err != nil {
+		return err
+	}
+	return windows.ShellExecute(0, verb, installer, parameters, nil, windows.SW_HIDE)
 }

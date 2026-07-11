@@ -11,6 +11,7 @@ unzip -Z1 "$archive" | sed '/\/$/d' | LC_ALL=C sort > "$actual"
 printf '%s\n' \
   WoWMarkets/Capture.lua \
   WoWMarkets/Core.lua \
+  WoWMarkets/Icon.tga \
   WoWMarkets/WoWMarkets.toc | LC_ALL=C sort > "$expected"
 if ! cmp -s "$actual" "$expected"; then
   echo "addon archive has unexpected contents:" >&2

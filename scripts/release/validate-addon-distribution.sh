@@ -18,11 +18,20 @@ metadata() {
 }
 
 interface=$(metadata Interface)
+icon_texture=$(metadata IconTexture)
 curse_project_id=$(metadata X-Curse-Project-ID)
 wago_project_id=$(metadata X-Wago-ID)
 
 if [ "$interface" != 20506 ]; then
   echo "addon interface must classify as Burning Crusade Classic 2.5.6: $interface" >&2
+  exit 1
+fi
+if [ "$icon_texture" != 'Interface\AddOns\WoWMarkets\Icon' ]; then
+  echo "addon IconTexture must reference the packaged icon: $icon_texture" >&2
+  exit 1
+fi
+if [ ! -f "$repository_root/addon/WoWMarkets/Icon.tga" ]; then
+  echo "addon Icon.tga is missing" >&2
   exit 1
 fi
 case "$curse_project_id" in

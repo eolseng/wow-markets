@@ -154,11 +154,37 @@ jobs:
           echo "Creating and signing the DMG"
           mkdir -p companion/dist "$RUNNER_TEMP/dmg/WoW Markets Companion"
           ditto "$app_path" "$RUNNER_TEMP/dmg/WoW Markets Companion/WoW Markets Companion.app"
-          ln -s /Applications "$RUNNER_TEMP/dmg/WoW Markets Companion/Applications"
           dmg_path=companion/dist/wow-markets-companion-macos-arm64.dmg
-          hdiutil create -volname "WoW Markets Companion" \
-            -srcfolder "$RUNNER_TEMP/dmg/WoW Markets Companion" \
-            -ov -format UDZO "$dmg_path"
+          create_dmg_version=1.3.0
+          create_dmg_sha256=c50d2bc97c3d6292642bac55f530d247eaf4bf65ee605f26b4caf339383e381c
+          create_dmg_archive="$RUNNER_TEMP/create-dmg.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/create-dmg/create-dmg/archive/refs/tags/v${create_dmg_version}.tar.gz" \
+            --output "$create_dmg_archive"
+          printf '%s  %s\n' "$create_dmg_sha256" "$create_dmg_archive" | shasum -a 256 -c -
+          tar -xzf "$create_dmg_archive" -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/create-dmg-${create_dmg_version}/create-dmg" \
+            --volname "WoW Markets Companion" \
+            --background companion/build/darwin/dmg-background.png \
+            --window-pos 200 120 \
+            --window-size 660 400 \
+            --icon-size 96 \
+            --text-size 12 \
+            --icon "WoW Markets Companion.app" 165 210 \
+            --hide-extension "WoW Markets Companion.app" \
+            --app-drop-link 495 210 \
+            --no-internet-enable \
+            "$dmg_path" \
+            "$RUNNER_TEMP/dmg/WoW Markets Companion"
+
+          inspection_dir=$(mktemp -d "$RUNNER_TEMP/dmg-inspection.XXXXXX")
+          hdiutil attach "$dmg_path" -nobrowse -readonly -mountpoint "$inspection_dir"
+          test -d "$inspection_dir/WoW Markets Companion.app"
+          test -L "$inspection_dir/Applications"
+          test -f "$inspection_dir/.background/dmg-background.png"
+          test -f "$inspection_dir/.DS_Store"
+          hdiutil detach "$inspection_dir"
+          rmdir "$inspection_dir"
           codesign --force --timestamp --sign "$APPLE_CODESIGN_IDENTITY" "$dmg_path"
           codesign --verify --strict --verbose=2 "$dmg_path"
 

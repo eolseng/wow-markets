@@ -68,8 +68,9 @@ files must match the GitHub source release.
 Install a downloaded distribution archive into a clean
 `_anniversary_/Interface/AddOns` folder, then:
 
-1. Start the game and confirm WoW reports the intended addon version and no
-   Lua errors.
+1. Start the game and confirm WoW reports the intended addon version, displays
+   `Icon.tga` instead of the question-mark placeholder, prints the concise
+   readiness message, and has no Lua errors.
 2. Run an Auctionator full scan. In one pass, wait for the WoW Markets
    completion message and type `/reload`; in another, exit WoW immediately
    after Auctionator completes to exercise the logout flush.

@@ -32,13 +32,6 @@ func wmsStatusItemShowWindow() {
 	}
 }
 
-//export wmsStatusItemHideWindow
-func wmsStatusItemHideWindow() {
-	if app := currentDarwinStatusItemApp(); app != nil {
-		app.HideWindow()
-	}
-}
-
 //export wmsStatusItemQuit
 func wmsStatusItemQuit() {
 	if app := currentDarwinStatusItemApp(); app != nil {
@@ -46,9 +39,20 @@ func wmsStatusItemQuit() {
 	}
 }
 
+//export wmsStatusItemInstallUpdate
+func wmsStatusItemInstallUpdate() {
+	if app := currentDarwinStatusItemApp(); app != nil {
+		if err := app.InstallUpdate(); err != nil {
+			app.setError(err)
+		}
+	}
+}
+
 //export wmsSparkleWillRelaunch
 func wmsSparkleWillRelaunch() {
 	if app := currentDarwinStatusItemApp(); app != nil {
-		app.prepareForUpdateRelaunch()
+		if err := app.prepareForUpdateRelaunch(); err != nil {
+			app.setError(err)
+		}
 	}
 }

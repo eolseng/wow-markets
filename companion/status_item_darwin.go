@@ -5,9 +5,10 @@ package main
 #cgo darwin LDFLAGS: -framework AppKit
 
 #import <AppKit/AppKit.h>
+#include <stdlib.h>
 
 extern void wmsStatusItemShowWindow(void);
-extern void wmsStatusItemHideWindow(void);
+extern void wmsStatusItemInstallUpdate(void);
 extern void wmsStatusItemQuit(void);
 
 @interface WMSStatusItemTarget : NSObject
@@ -18,8 +19,8 @@ extern void wmsStatusItemQuit(void);
 	wmsStatusItemShowWindow();
 }
 
-- (void)hideWindow:(id)sender {
-	wmsStatusItemHideWindow();
+- (void)installUpdate:(id)sender {
+	wmsStatusItemInstallUpdate();
 }
 
 - (void)quit:(id)sender {
@@ -29,6 +30,7 @@ extern void wmsStatusItemQuit(void);
 
 static NSStatusItem *wmsStatusItem;
 static WMSStatusItemTarget *wmsStatusItemTarget;
+static NSMenuItem *wmsUpdateItem;
 
 static NSImage *wmsCreateStatusIcon(void) {
 	NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize(18, 18)];
@@ -84,9 +86,10 @@ static void wmsCreateStatusItem(void) {
 		[showItem setTarget:wmsStatusItemTarget];
 		[menu addItem:showItem];
 
-		NSMenuItem *hideItem = [[NSMenuItem alloc] initWithTitle:@"Hide Window" action:@selector(hideWindow:) keyEquivalent:@""];
-		[hideItem setTarget:wmsStatusItemTarget];
-		[menu addItem:hideItem];
+		wmsUpdateItem = [[NSMenuItem alloc] initWithTitle:@"Install update" action:@selector(installUpdate:) keyEquivalent:@""];
+		[wmsUpdateItem setTarget:wmsStatusItemTarget];
+		[wmsUpdateItem setHidden:YES];
+		[menu addItem:wmsUpdateItem];
 		[menu addItem:[NSMenuItem separatorItem]];
 
 		NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit WoW Markets Companion" action:@selector(quit:) keyEquivalent:@""];
@@ -105,10 +108,28 @@ static void wmsRemoveStatusItem(void) {
 		[[NSStatusBar systemStatusBar] removeStatusItem:wmsStatusItem];
 		wmsStatusItem = nil;
 		wmsStatusItemTarget = nil;
+		wmsUpdateItem = nil;
+	});
+}
+
+static void wmsSetUpdateAvailable(short available, const char *version) {
+	NSString *versionString = [NSString stringWithUTF8String:version ?: ""];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		if (wmsUpdateItem == nil) {
+			return;
+		}
+		if (available) {
+			[wmsUpdateItem setTitle:[NSString stringWithFormat:@"Install update %@", versionString]];
+			[wmsUpdateItem setHidden:NO];
+		} else {
+			[wmsUpdateItem setHidden:YES];
+		}
 	});
 }
 */
 import "C"
+
+import "unsafe"
 
 func registerStatusItem(app *App) {
 	setDarwinStatusItemApp(app)
@@ -126,4 +147,18 @@ func stopStatusItem() {
 
 func activateVisibleWindow() {
 	C.wmsActivateApplication()
+}
+
+func updateStatusItem(snapshot UpdaterSnapshot) {
+	available := snapshot.AvailableVersion != "" && (snapshot.Status == updateStatusAvailable || snapshot.ReadyToInstall)
+	version := C.CString(snapshot.AvailableVersion)
+	defer C.free(unsafe.Pointer(version))
+	C.wmsSetUpdateAvailable(boolToCShort(available), version)
+}
+
+func boolToCShort(value bool) C.short {
+	if value {
+		return 1
+	}
+	return 0
 }

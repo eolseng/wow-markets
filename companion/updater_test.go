@@ -253,6 +253,8 @@ func TestDeferredDownloadedUpdateRemainsInstallable(t *testing.T) {
 	app := &App{
 		nativeUpdater:    native,
 		stagedUpdatePath: "staged-installer.exe",
+		dataDir:          t.TempDir(),
+		windowShown:      true,
 		updater: UpdaterSnapshot{
 			ReadyToInstall: true,
 			Status:         updateStatusDeferred,
@@ -263,6 +265,10 @@ func TestDeferredDownloadedUpdateRemainsInstallable(t *testing.T) {
 	}
 	if native.installedPath != "staged-installer.exe" {
 		t.Fatalf("installed path = %q", native.installedPath)
+	}
+	visible, found, err := consumeUpdateRelaunchVisibility(app.dataDir)
+	if err != nil || !found || !visible {
+		t.Fatalf("saved relaunch visibility = %v, %v, %v; want true, true, nil", visible, found, err)
 	}
 }
 

@@ -33,10 +33,28 @@ func TestPendingQuitSurvivesStartupContextAttachment(t *testing.T) {
 }
 
 func TestSparkleRelaunchAllowsExternalQuit(t *testing.T) {
-	app := &App{}
-	app.prepareForUpdateRelaunch()
+	app := &App{dataDir: t.TempDir(), windowShown: true}
+	if err := app.prepareForUpdateRelaunch(); err != nil {
+		t.Fatal(err)
+	}
 	if app.beforeClose(context.Background()) {
 		t.Fatal("Sparkle install-and-relaunch request was treated as a window hide")
+	}
+}
+
+func TestUpdateRelaunchRestoresPreviousWindowVisibility(t *testing.T) {
+	for _, visible := range []bool{true, false} {
+		dataDir := t.TempDir()
+		if err := persistUpdateRelaunchVisibility(dataDir, visible); err != nil {
+			t.Fatal(err)
+		}
+		actual, found, err := consumeUpdateRelaunchVisibility(dataDir)
+		if err != nil || !found || actual != visible {
+			t.Fatalf("consume visibility = %v, %v, %v; want %v, true, nil", actual, found, err, visible)
+		}
+		if _, foundAgain, err := consumeUpdateRelaunchVisibility(dataDir); err != nil || foundAgain {
+			t.Fatalf("consumed state persisted: found=%v err=%v", foundAgain, err)
+		}
 	}
 }
 

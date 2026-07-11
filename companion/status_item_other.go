@@ -9,3 +9,5 @@ func startStatusItem(app *App) {}
 func stopStatusItem() {}
 
 func activateVisibleWindow() {}
+
+func updateStatusItem(UpdaterSnapshot) {}

@@ -76,11 +76,15 @@ type App struct {
 }
 
 func NewApp() *App {
+	return newApp(!launchedInBackground())
+}
+
+func newApp(windowShown bool) *App {
 	endpoints := configuredServiceEndpoints()
 	return &App{
 		initializing:     true,
 		startupPhase:     "Starting WoW Markets Companion",
-		windowShown:      !launchedInBackground(),
+		windowShown:      windowShown,
 		apiURL:           endpoints.APIURL,
 		installationsURL: endpoints.InstallationsURL,
 		updater: UpdaterSnapshot{
@@ -140,10 +144,21 @@ func (app *App) beforeClose(ctx context.Context) bool {
 	return true
 }
 
-func (app *App) prepareForUpdateRelaunch() {
+func (app *App) prepareForUpdateRelaunch() error {
 	app.mu.Lock()
 	app.updateRelaunch = true
+	windowShown := app.windowShown
+	dataDir := app.dataDir
 	app.mu.Unlock()
+	return persistUpdateRelaunchVisibility(dataDir, windowShown)
+}
+
+func (app *App) cancelUpdateRelaunch() {
+	app.mu.Lock()
+	app.updateRelaunch = false
+	dataDir := app.dataDir
+	app.mu.Unlock()
+	_ = clearUpdateRelaunchVisibility(dataDir)
 }
 
 func (app *App) ShowWindow() {
@@ -846,6 +861,7 @@ func (app *App) emitSnapshot() {
 	ctx := app.ctx
 	snapshot := app.snapshotLocked()
 	app.mu.Unlock()
+	updateStatusItem(snapshot.Updater)
 	if ctx != nil {
 		runtime.EventsEmit(ctx, snapshotEventName, snapshot)
 	}

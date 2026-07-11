@@ -23,6 +23,12 @@ The `addon-release` GitHub environment holds `CF_API_KEY` and
 these secrets. BigWigs packager `v2.5.1` is pinned by full commit SHA in both
 CI and the release workflow.
 
+Create `WAGO_API_TOKEN` under **Wago Addons → Account Settings → API Keys**.
+Wago keys intended for addon updaters are a different credential type and
+return HTTP 401 when used for publishing. Keep the publishing token only in
+the protected GitHub environment unless a separate, reviewed local release
+workflow requires it.
+
 ## Prepare and publish
 
 1. Run `make addon-check` and `make release-check` from the repository root.
@@ -75,3 +81,12 @@ Never replace a published archive, tag, or immutable GitHub release. Correct a
 bad release by incrementing the semantic version and publishing a new tag. A
 bad CurseForge or Wago version may be archived only after the replacement is
 available and the incident is recorded.
+
+BigWigs uploads CurseForge before Wago. If a later channel fails after an
+earlier one reports success, do not rerun the unchanged job with every
+credential present: that may create a duplicate file on the successful
+channel. First verify each channel independently, suppress the already
+successful channel for the single recovery run, retry only the missing
+destinations from the immutable tag, then restore and verify the protected
+environment. Revoke and replace any credential that appears in logs or tool
+output before retrying.

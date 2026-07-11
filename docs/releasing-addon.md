@@ -10,7 +10,7 @@ same archive in an immutable GitHub release.
 
 - Set the semantic version in `addon/WoWMarkets/WoWMarkets.toc`.
 - Add the matching release notes to the top of `addon/CHANGELOG.md`.
-- Keep `X-Curse-Project-ID`, `X-Wago-ID`, interface `20505`, and the
+- Keep `X-Curse-Project-ID`, `X-Wago-ID`, interface `20506`, and the
   Auctionator dependency aligned with `.pkgmeta`.
 - Tag releases as `addon-v<version>`.
 - Include `alpha` or `beta` in prerelease versions. BigWigs treats an untagged
@@ -47,7 +47,7 @@ workflow requires it.
    ```
 
 5. Approve the protected `addon-release` environment. Require the workflow log
-   to show game version `2.5.5`, the intended alpha/beta/release classification,
+   to show game version `2.5.6`, the intended alpha/beta/release classification,
    and successful CurseForge and Wago uploads.
 6. Confirm the GitHub release is published, has the correct prerelease flag,
    and reports `immutable: true`.
@@ -60,7 +60,7 @@ version.
 ## Audit and smoke-test
 
 Download each channel's archive without re-uploading or replacing it. Confirm
-all three report the same semantic version, interface `20505`, and package
+all three report the same semantic version, interface `20506`, and package
 contents. Record SHA-256 values when comparing downloaded files; metadata or
 platform processing may prevent byte-for-byte identity, but extracted addon
 files must match the GitHub source release.
@@ -70,11 +70,13 @@ Install a downloaded distribution archive into a clean
 
 1. Start the game and confirm WoW reports the intended addon version and no
    Lua errors.
-2. Run an Auctionator full scan and wait for the WoW Markets completion
-   message.
-3. Type `/reload` and confirm the companion reports the installed addon
-   version and detects the new SavedVariables capture.
-4. Confirm the companion archives and uploads the scan and the production web
+2. Run an Auctionator full scan. In one pass, wait for the WoW Markets
+   completion message and type `/reload`; in another, exit WoW immediately
+   after Auctionator completes to exercise the logout flush.
+3. Confirm the companion reports the installed addon version and detects both
+   new SavedVariables captures. Inspect the newest persisted scan if needed and
+   verify its `addonVersion` matches the release.
+4. Confirm the companion archives and uploads the scans and the production web
    experience reflects the accepted data.
 
 Never replace a published archive, tag, or immutable GitHub release. Correct a

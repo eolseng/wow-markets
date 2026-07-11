@@ -21,8 +21,8 @@ interface=$(metadata Interface)
 curse_project_id=$(metadata X-Curse-Project-ID)
 wago_project_id=$(metadata X-Wago-ID)
 
-if [ "$interface" != 20505 ]; then
-  echo "addon interface must classify as Burning Crusade Classic 2.5.5: $interface" >&2
+if [ "$interface" != 20506 ]; then
+  echo "addon interface must classify as Burning Crusade Classic 2.5.6: $interface" >&2
   exit 1
 fi
 case "$curse_project_id" in

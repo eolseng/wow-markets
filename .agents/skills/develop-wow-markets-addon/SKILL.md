@@ -21,8 +21,8 @@ description: Implement, debug, review, release, and verify the WoW Markets addon
 - Keep the Lua namespace `WoWMarkets`, SavedVariables global
   `WOW_MARKETS_DB`, and generated file `WoWMarkets.lua` aligned with companion
   discovery.
-- Keep `/wm` primary. `/wms` is a compatibility alias unless intentionally
-  removed with documentation and migration guidance.
+- Keep `/wms` primary and `/wowmarkets` available. Treat `/wm` as a
+  best-effort compatibility alias because the game can claim it.
 - Keep the user-visible name exactly `WoW Markets`.
 
 ## Implement capture changes safely
@@ -33,11 +33,14 @@ description: Implement, debug, review, release, and verify the WoW Markets addon
 2. Keep the synchronous completion listener small. Retain the raw payload and
    compact it in timer batches; do not transform a full scan in the event
    callback.
-3. Export every row, omit owner names, and preserve item-string variants.
-4. Freeze region, character, faction, and Auction House location when capture
+3. Finish any active compaction synchronously on `PLAYER_LOGOUT`, before WoW
+   serializes SavedVariables. A user may close the client immediately after
+   Auctionator reports completion.
+4. Export every row, omit owner names, and preserve item-string variants.
+5. Freeze region, character, faction, and Auction House location when capture
    begins. Keep neutral classification consistent with the companion's
    independent validator.
-5. Never place an in-progress scan in SavedVariables. Only append complete
+6. Never place an in-progress scan in SavedVariables. Only append complete
    `ready` scans and preserve bounded queue rotation.
 
 ## Keep the UX small and truthful
@@ -75,13 +78,21 @@ location APIs, or TOC changes, also report the remaining in-game checks. When
 the SavedVariables contract changes, run the companion gate and record the
 public commit required by the service consumer tests.
 
+For a missing companion import, first compare the SavedVariables file mtime
+and newest `pendingScans` entry with the scan time. If WoW rewrote the file but
+there is no new `ready` scan, debug addon capture; the companion cannot import
+an in-memory capture. Smoke-test a full scan followed by immediate game exit,
+then verify the persisted record has the release `addonVersion`.
+
 ## Release and distribute
 
 1. Read `docs/releasing-addon.md` completely before changing a version,
    distribution ID, `.pkgmeta`, or `.github/workflows/addon-release.yml`.
-2. Keep CurseForge project `1605493`, Wago project `qGZOdXNd`, interface
-   `20505`, and the Auctionator dependency synchronized across the TOC,
-   `.pkgmeta`, dashboards, tests, and companion links.
+2. Keep CurseForge project `1605493`, Wago project `qGZOdXNd`, the current
+   Classic Anniversary interface (`20506` for 2.5.6), and the Auctionator
+   dependency synchronized across the TOC, `.pkgmeta`, dashboards, tests, and
+   companion links. Confirm the interface from the installed client's
+   `.build.info` and a current compatible addon's TOC when the game updates.
 3. Use `addon-v<version>` tags. Use semantic `alpha` or `beta` labels for
    prereleases because the pinned BigWigs packager treats other tagged labels,
    including `rc`, as stable.

@@ -88,7 +88,7 @@ end
 local Listener = {}
 
 function Listener:ReceiveEvent(eventName, rawFullScan)
-  if eventName ~= SCAN_COMPLETE_EVENT then
+  if eventName ~= WoWMarkets.ScanCompleteEvent then
     return
   end
 
@@ -97,12 +97,20 @@ end
 
 local Frame = CreateFrame("Frame")
 Frame:RegisterEvent("ADDON_LOADED")
+Frame:RegisterEvent("PLAYER_LOGOUT")
 Frame:SetScript("OnEvent", function(_, event, loadedAddon)
+  if event == "PLAYER_LOGOUT" then
+    if WoWMarkets.Capture and WoWMarkets.Capture:IsActive() then
+      WoWMarkets.Capture:CompleteNow()
+    end
+    return
+  end
+
   if event ~= "ADDON_LOADED" or loadedAddon ~= ADDON_NAME then
     return
   end
 
-  local isFirstRun, resetDatabase, removedScans = InitializeDatabase()
+  local _, resetDatabase, removedScans = InitializeDatabase()
 
   if resetDatabase then
     Print("Stored data used an unsupported format and was reset.", "warning")
@@ -119,15 +127,35 @@ Frame:SetScript("OnEvent", function(_, event, loadedAddon)
     return
   end
 
-  WoWMarkets.CaptureEnabled = true
-  Auctionator.EventBus:Register(Listener, { SCAN_COMPLETE_EVENT })
-  if isFirstRun then
-    Print("Ready. Run an Auctionator full scan when you are at the Auction House.")
+  local fullScanEvents = Auctionator.FullScan and Auctionator.FullScan.Events
+  WoWMarkets.ScanCompleteEvent =
+    fullScanEvents and fullScanEvents.ScanComplete or SCAN_COMPLETE_EVENT
+
+  local registered, registerError = pcall(
+    Auctionator.EventBus.Register,
+    Auctionator.EventBus,
+    Listener,
+    { WoWMarkets.ScanCompleteEvent }
+  )
+  if not registered then
+    WoWMarkets.CaptureEnabled = false
+    Print(
+      "Auctionator scan listener failed to start: " .. tostring(registerError),
+      "error"
+    )
+    return
   end
+
+  WoWMarkets.CaptureEnabled = true
+  Print(
+    "Ready. Version " .. GetAddonVersion() ..
+    ". Run an Auctionator full scan at the Auction House; use /wms status for progress."
+  )
 end)
 
-SLASH_WOWMARKETS1 = "/wm"
-SLASH_WOWMARKETS2 = "/wms"
+SLASH_WOWMARKETS1 = "/wms"
+SLASH_WOWMARKETS2 = "/wowmarkets"
+SLASH_WOWMARKETS3 = "/wm"
 SlashCmdList.WOWMARKETS = function(command)
   local normalized = string.lower(string.match(command or "", "^%s*(.-)%s*$"))
 
@@ -139,7 +167,7 @@ SlashCmdList.WOWMARKETS = function(command)
     end
     Print(
       "This will remove " .. FormatNumber(count) ..
-      " stored scan(s). Type /wm clear confirm to continue.",
+      " stored scan(s). Type /wms clear confirm to continue.",
       "warning"
     )
     return
@@ -178,7 +206,7 @@ SlashCmdList.WOWMARKETS = function(command)
     return
   end
 
-  Print("Commands: /wm status or /wm location.")
+  Print("Commands: /wms status or /wms location.")
 end
 
 WoWMarkets.AddonName = ADDON_NAME

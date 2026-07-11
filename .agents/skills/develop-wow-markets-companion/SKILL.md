@@ -1,6 +1,6 @@
 ---
 name: develop-wow-markets-companion
-description: Implement, debug, review, and verify the WoW Markets Companion desktop app. Use for changes under companion involving Go/Wails bindings, the hand-written frontend, token onboarding, WoW/addon/SavedVariables discovery, scan archiving and uploads, tray behavior, launch at login, packaging, or companion tests.
+description: Implement, debug, review, release, and verify the WoW Markets Companion desktop app. Use for changes under companion involving Go/Wails bindings, the hand-written frontend, token onboarding, WoW/addon/SavedVariables discovery, scan archiving and uploads, tray behavior, launch at login, packaging, signed appcasts, protected companion releases, update promotion, or companion tests.
 ---
 
 # Develop WoW Markets Companion
@@ -76,6 +76,29 @@ node --check frontend/dist/app.js
 
 Build/package when platform metadata or startup behavior changes. Report any
 platform behavior that still requires a disposable macOS/Windows login test.
+
+## Release safely
+
+1. Read `docs/releasing.md` completely before changing a companion version,
+   release workflow, signing/notarization step, appcast, or channel promotion.
+2. Increment both the semantic version in `companion/wails.json` and the
+   strictly increasing native build in `companion/build-version.txt`. Never
+   reuse a published version or build number.
+3. Release only a green, merged `main` commit through the manually dispatched
+   protected workflow. Keep secrets out of pull-request jobs and local output.
+4. Treat workflow output as a draft until checksums, signatures, appcast item
+   and enclosure versions, attestations, Apple stapling, and Gatekeeper have
+   been independently verified. Expect exactly the macOS and Windows appcasts
+   for the selected channel, never both stable and beta feeds in one release.
+5. Publish the audited draft before promoting its exact immutable version with
+   `COMPANION_BETA_VERSION` or `COMPANION_STABLE_VERSION` in the private
+   service deployment. Never edit a signed feed or immutable asset.
+6. Smoke-test startup discovery, Home/tray notice, native installation,
+   relaunch, preserved token/archive/upload state, and background behavior on
+   both supported operating systems.
+7. Roll back promotion to stop new upgrades; fix installed clients forward
+   with higher semantic and native build versions. Never attempt a downgrade
+   or overwrite an existing release.
 
 ## Maintain this skill
 

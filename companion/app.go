@@ -147,10 +147,11 @@ func (app *App) beforeClose(ctx context.Context) bool {
 func (app *App) prepareForUpdateRelaunch() error {
 	app.mu.Lock()
 	app.updateRelaunch = true
-	windowShown := app.windowShown
 	dataDir := app.dataDir
 	app.mu.Unlock()
-	return persistUpdateRelaunchVisibility(dataDir, windowShown)
+	// Always show the companion after an update so the user can see that the
+	// installation completed and which version is now running.
+	return persistUpdateRelaunchVisibility(dataDir, true)
 }
 
 func (app *App) cancelUpdateRelaunch() {

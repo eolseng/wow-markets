@@ -51,7 +51,7 @@ if [ -n "$tag" ]; then
 fi
 
 grep -Fx 'package-as: WoWMarkets' "$repository_root/.pkgmeta" >/dev/null
-grep -Fx '  addon/WoWMarkets: WoWMarkets' "$repository_root/.pkgmeta" >/dev/null
+grep -Fx '  WoWMarkets/addon/WoWMarkets: WoWMarkets' "$repository_root/.pkgmeta" >/dev/null
 
 printf 'addon distribution metadata valid: %s (interface %s, CurseForge %s, Wago %s)\n' \
   "$requested_version" "$interface" "$curse_project_id" "$wago_project_id"

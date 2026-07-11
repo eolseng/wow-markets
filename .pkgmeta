@@ -8,7 +8,7 @@ required-dependencies:
   - auctionator
 
 move-folders:
-  addon/WoWMarkets: WoWMarkets
+  WoWMarkets/addon/WoWMarkets: WoWMarkets
 
 ignore:
   - .agents

@@ -33,17 +33,18 @@ type App struct {
 	quitting         bool
 	updateRelaunch   bool
 
-	initializing   bool
-	startupPhase   string
-	configWritable bool
-	config         companionConfig
-	token          string
-	dataDir        string
-	discoveries    []wowinstall.Candidate
-	wowDetected    bool
-	addonDetected  bool
-	addonPath      string
-	addonVersion   string
+	initializing         bool
+	startupPhase         string
+	configWritable       bool
+	config               companionConfig
+	token                string
+	dataDir              string
+	discoveries          []wowinstall.Candidate
+	wowDetected          bool
+	addonDetected        bool
+	addonPath            string
+	addonVersion         string
+	setupScanFingerprint string
 
 	launchAtLogin          bool
 	launchAtLoginSupported bool
@@ -790,6 +791,60 @@ func (app *App) refreshSetupLocked() (Snapshot, error) {
 	return snapshot, nil
 }
 
+// refreshMissingAddonLocked keeps the incomplete-setup monitor cheap while the
+// addon is absent. A full refresh discovers and parses SavedVariables files,
+// which is unnecessary until the addon marker appears.
+func (app *App) refreshMissingAddonLocked() (Snapshot, error) {
+	app.mu.Lock()
+	root := app.config.WowInstallPath
+	app.mu.Unlock()
+
+	addonDetected, err := wowinstall.AddonInstalled(root)
+	if err != nil {
+		return app.Snapshot(), err
+	}
+	if addonDetected {
+		return app.refreshSetupLocked()
+	}
+
+	app.mu.Lock()
+	app.addonDetected = false
+	app.addonPath = wowinstall.AddonMarkerPath(root)
+	app.addonVersion = ""
+	snapshot := app.snapshotLocked()
+	app.mu.Unlock()
+	return snapshot, nil
+}
+
+func (app *App) refreshMissingWowLocked() (Snapshot, error) {
+	app.mu.Lock()
+	configuredRoot := app.config.WowInstallPath
+	app.mu.Unlock()
+	if _, found := wowinstall.FindInstallRoot(configuredRoot); found {
+		return app.refreshSetupLocked()
+	}
+	return app.Snapshot(), nil
+}
+
+func (app *App) refreshMissingSavedVariablesLocked() (Snapshot, error) {
+	app.mu.Lock()
+	root := app.config.WowInstallPath
+	previous := app.setupScanFingerprint
+	app.mu.Unlock()
+
+	fingerprint, err := wowinstall.AnniversaryScanFilesFingerprint(root)
+	if err != nil {
+		return app.Snapshot(), err
+	}
+	if previous == fingerprint {
+		return app.Snapshot(), nil
+	}
+	app.mu.Lock()
+	app.setupScanFingerprint = fingerprint
+	app.mu.Unlock()
+	return app.refreshSetupLocked()
+}
+
 func (app *App) startSetupMonitor() {
 	app.mu.Lock()
 	if app.quitting || app.setupMonitorCancel != nil {
@@ -825,7 +880,20 @@ func (app *App) startSetupMonitor() {
 				}
 				before := snapshot.CurrentStep
 				app.setupMu.Lock()
-				updated, err := app.refreshSetupLocked()
+				var updated Snapshot
+				var err error
+				switch before {
+				case "token":
+					updated = snapshot
+				case "wow":
+					updated, err = app.refreshMissingWowLocked()
+				case "addon":
+					updated, err = app.refreshMissingAddonLocked()
+				case "saved_variables":
+					updated, err = app.refreshMissingSavedVariablesLocked()
+				default:
+					updated = snapshot
+				}
 				if err != nil {
 					app.setupMu.Unlock()
 					app.setError(err)

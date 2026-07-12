@@ -1,7 +1,9 @@
 package wowinstall
 
 import (
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -70,6 +72,32 @@ func DiscoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
 }
 
 func discoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
+	matches, err := anniversaryScanFileMatches(root)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates := make([]Candidate, 0, len(matches))
+	for _, match := range matches {
+		candidate, ok := validCandidate(match, root)
+		if ok {
+			candidates = append(candidates, candidate)
+		}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool {
+		leftCurrent := filepath.Base(candidates[i].Path) == primaryScanFileName
+		rightCurrent := filepath.Base(candidates[j].Path) == primaryScanFileName
+		if leftCurrent != rightCurrent {
+			return leftCurrent
+		}
+		left, _ := time.Parse(time.RFC3339, candidates[i].ModifiedAt)
+		right, _ := time.Parse(time.RFC3339, candidates[j].ModifiedAt)
+		return left.After(right)
+	})
+	return dedupeAccountCandidates(candidates), nil
+}
+
+func anniversaryScanFileMatches(root string) ([]string, error) {
 	currentAddonInstalled, err := AddonInstalled(root)
 	if err != nil {
 		return nil, err
@@ -93,25 +121,31 @@ func discoverAnniversaryScanFilesInRoot(root string) ([]Candidate, error) {
 		}
 		matches = append(matches, fileMatches...)
 	}
+	sort.Strings(matches)
+	return matches, nil
+}
 
-	candidates := make([]Candidate, 0, len(matches))
-	for _, match := range matches {
-		candidate, ok := validCandidate(match, root)
-		if ok {
-			candidates = append(candidates, candidate)
-		}
+// AnniversaryScanFilesFingerprint returns a metadata-only fingerprint of the
+// SavedVariables files relevant to discovery. It deliberately does not read or
+// parse their potentially large Lua payloads.
+func AnniversaryScanFilesFingerprint(root string) (string, error) {
+	root = NormalizeInstallRoot(root)
+	matches, err := anniversaryScanFileMatches(root)
+	if err != nil {
+		return "", err
 	}
-	sort.SliceStable(candidates, func(i, j int) bool {
-		leftCurrent := filepath.Base(candidates[i].Path) == primaryScanFileName
-		rightCurrent := filepath.Base(candidates[j].Path) == primaryScanFileName
-		if leftCurrent != rightCurrent {
-			return leftCurrent
+	hash := sha256.New()
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return "", err
 		}
-		left, _ := time.Parse(time.RFC3339, candidates[i].ModifiedAt)
-		right, _ := time.Parse(time.RFC3339, candidates[j].ModifiedAt)
-		return left.After(right)
-	})
-	return dedupeAccountCandidates(candidates), nil
+		fmt.Fprintf(hash, "%s\x00%d\x00%d\n", match, info.Size(), info.ModTime().UnixNano())
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 func NormalizeInstallRoot(path string) string {

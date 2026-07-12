@@ -3,7 +3,11 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/eolseng/wow-markets/companion/internal/wowinstall"
 )
 
 func TestPendingShowSurvivesStartupContextAttachment(t *testing.T) {
@@ -99,6 +103,66 @@ func TestSnapshotIncludesAddonDistributionDetails(t *testing.T) {
 	}
 	if snapshot.AddonCurseForgeURL != addonCurseForgeURL || snapshot.AddonWagoURL != addonWagoURL {
 		t.Fatalf("distribution URLs = %q, %q", snapshot.AddonCurseForgeURL, snapshot.AddonWagoURL)
+	}
+}
+
+func TestMissingAddonRefreshDoesNotRediscoverSavedVariables(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "_anniversary_"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	existing := wowinstall.Candidate{Account: "ACCOUNT", Path: "/already/discovered.lua"}
+	app := &App{
+		config:      companionConfig{WowInstallPath: root, ScanFilePath: existing.Path},
+		discoveries: []wowinstall.Candidate{existing},
+		wowDetected: true,
+	}
+
+	snapshot, err := app.refreshMissingAddonLocked()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.AddonDetected {
+		t.Fatal("missing addon was detected")
+	}
+	if snapshot.AddonPath != wowinstall.AddonMarkerPath(root) {
+		t.Fatalf("addon path = %q, want %q", snapshot.AddonPath, wowinstall.AddonMarkerPath(root))
+	}
+	if snapshot.ScanFilePath != existing.Path || len(snapshot.Discoveries) != 1 {
+		t.Fatalf("cheap addon refresh changed SavedVariables state: %+v", snapshot)
+	}
+}
+
+func TestUnchangedSavedVariablesRefreshDoesNotReparseFiles(t *testing.T) {
+	root := t.TempDir()
+	savedVariables := filepath.Join(root, "_anniversary_", "WTF", "Account", "ACCOUNT", "SavedVariables")
+	if err := os.MkdirAll(savedVariables, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(wowinstall.AddonMarkerPath(root)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(wowinstall.AddonMarkerPath(root), []byte("## Version: test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(savedVariables, "WoWMarkets.lua"), []byte("not parseable"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	app := &App{config: companionConfig{WowInstallPath: root}, wowDetected: true, addonDetected: true}
+	if _, err := app.refreshMissingSavedVariablesLocked(); err != nil {
+		t.Fatal(err)
+	}
+
+	sentinel := wowinstall.Candidate{Account: "sentinel", Path: "/not/from/disk.lua"}
+	app.mu.Lock()
+	app.discoveries = []wowinstall.Candidate{sentinel}
+	app.mu.Unlock()
+	snapshot, err := app.refreshMissingSavedVariablesLocked()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshot.Discoveries) != 1 || snapshot.Discoveries[0].Path != sentinel.Path {
+		t.Fatalf("unchanged metadata triggered SavedVariables rediscovery: %+v", snapshot.Discoveries)
 	}
 }
 

@@ -5,7 +5,7 @@ Anniversary SavedVariables, archives new WoW Markets addon captures as
 canonical gzip JSON, and uploads them to `POST /v1/scans`.
 
 The companion does not handle account login. Users create an installation
-token at <https://wowmarkets.app/account/installations>, paste it into the app,
+token at <https://wowmarkets.app/account/contribute>, paste it into the app,
 and the full token is stored in macOS Keychain or Windows Credential Manager.
 
 ## Run and verify
@@ -22,7 +22,7 @@ uses Wails bindings at `window.go.main.App`, listens for lifecycle snapshots,
 and retains polling as a recovery path.
 
 Development defaults to `http://127.0.0.1:8787` for the API and
-`http://127.0.0.1:3000/account/installations` for token management. Override
+`http://127.0.0.1:3000/account/contribute` for token management. Override
 them explicitly with `WOW_MARKETS_API_URL` and
 `WOW_MARKETS_INSTALLATIONS_URL`. Official builds inject the production origins
 through Go linker values; release workflows must set both
@@ -106,7 +106,7 @@ successful installation.
 
 1. Start with no stored token and confirm the loading screen resolves to token
    onboarding with no email/password fields.
-2. Open the installations page, paste a valid token, and confirm only its hint
+2. Open the Contribute page, paste a valid token, and confirm only its hint
    is displayed afterward.
 3. Exercise missing WoW folder, missing addon, and missing SavedVariables in
    turn; confirm each has distinct guidance.

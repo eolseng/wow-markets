@@ -15,7 +15,7 @@ it vanilla HTML/CSS/ES modules with no bundler.
 ## Product invariants
 
 - The companion never accepts account credentials. Users create a `wms1_…`
-  installation token at `https://wowmarkets.app/account/installations` and
+  installation token at `https://wowmarkets.app/account/contribute` and
   paste it into the app. Store the full token only in the OS credential store;
   expose only its 13-character hint.
 - Setup order is token → Anniversary WoW folder → addon marker → parseable

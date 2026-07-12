@@ -25,8 +25,8 @@ func TestConfiguredServiceEndpointsDefaultToLoopback(t *testing.T) {
 }
 
 func TestCompanionVersionComesFromWailsConfig(t *testing.T) {
-	if actual := companionVersion(); actual != "1.0.0-rc.12" {
-		t.Fatalf("companionVersion() = %q, want %q", actual, "1.0.0-rc.12")
+	if actual := companionVersion(); actual != "1.0.0" {
+		t.Fatalf("companionVersion() = %q, want %q", actual, "1.0.0")
 	}
 }
 
@@ -76,7 +76,7 @@ func TestConfiguredServiceEndpointsPreferOfficialBuildValues(t *testing.T) {
 	previousAPIURL := officialAPIURL
 	previousInstallationsURL := officialInstallationsURL
 	officialAPIURL = "https://api.wowmarkets.app/"
-	officialInstallationsURL = "https://wowmarkets.app/account/installations"
+	officialInstallationsURL = "https://wowmarkets.app/account/contribute"
 	t.Cleanup(func() {
 		officialAPIURL = previousAPIURL
 		officialInstallationsURL = previousInstallationsURL
@@ -84,7 +84,7 @@ func TestConfiguredServiceEndpointsPreferOfficialBuildValues(t *testing.T) {
 
 	actual := configuredServiceEndpoints()
 	if actual.APIURL != "https://api.wowmarkets.app" ||
-		actual.InstallationsURL != "https://wowmarkets.app/account/installations" {
+		actual.InstallationsURL != "https://wowmarkets.app/account/contribute" {
 		t.Fatalf("configuredServiceEndpoints() = %#v", actual)
 	}
 }

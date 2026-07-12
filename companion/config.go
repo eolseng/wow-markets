@@ -12,7 +12,7 @@ import (
 
 const (
 	developmentAPIURL           = "http://127.0.0.1:8787"
-	developmentInstallationsURL = "http://127.0.0.1:3000/account/installations"
+	developmentInstallationsURL = "http://127.0.0.1:3000/account/contribute"
 	configDirName               = "WoWMarkets"
 	legacyConfigDirName         = "WowMarketScan"
 	configFileName              = "config.json"

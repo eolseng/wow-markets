@@ -1,5 +1,14 @@
 # WoW Markets addon changelog
 
+## 1.0.0
+
+- Publish the first stable WoW Markets addon release.
+- Capture Auctionator full scans without requiring a second scan.
+- Hand completed scans to WoW Markets Companion through compact, account-wide
+  SavedVariables while preserving variants and excluding owner names.
+- Support immediate logout after a completed scan, concise `/wms` guidance,
+  and the Burning Crusade Classic Anniversary 2.5.6 client.
+
 ## 0.5.0-beta.3
 
 - Make chat messages shorter and use `/wms` as the concise command entrypoint.

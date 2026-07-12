@@ -186,10 +186,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 
 .hero-symbol { position: relative; z-index: 1; display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid currentColor; border-radius: 14px; background: color-mix(in srgb, currentColor 10%, transparent); }
 .hero-symbol::before { width: 17px; height: 17px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; content: ""; animation: spin .8s linear infinite; }
-.hero-symbol.success::before { width: 19px; height: 10px; border: 0; border-bottom: 2px solid currentColor; border-left: 2px solid currentColor; border-radius: 0; animation: none; transform: rotate(-45deg) translate(1px,-1px); }
-.hero-symbol.warning::before { width: 3px; height: 18px; border: 0; border-radius: 2px; background: currentColor; animation: none; box-shadow: 0 22px 0 -1px currentColor; transform: translateY(-4px); }
-.hero-symbol.danger::before { width: 19px; height: 2px; border: 0; border-radius: 2px; background: currentColor; animation: none; transform: rotate(45deg); box-shadow: 0 0 0 0; }
-.hero-symbol.danger::after { position: absolute; width: 19px; height: 2px; border-radius: 2px; background: currentColor; content: ""; transform: rotate(-45deg); }
+.hero-symbol.success::before { width: 19px; height: 10px; border: 0; border-bottom: 2px solid currentColor; border-left: 2px solid currentColor; border-radius: 0; animation: none; transform: rotate(-45deg); }
+.hero-symbol.warning::before { position: absolute; left: 50%; top: 15px; width: 3px; height: 17px; border: 0; border-radius: 2px; background: currentColor; animation: none; box-shadow: none; transform: translateX(-50%); }
+.hero-symbol.warning::after { position: absolute; left: 50%; top: 36px; width: 3px; height: 3px; border-radius: 50%; background: currentColor; content: ""; transform: translateX(-50%); }
+.hero-symbol.danger::before, .hero-symbol.danger::after { position: absolute; left: 50%; top: 50%; width: 19px; height: 2px; border: 0; border-radius: 2px; background: currentColor; animation: none; box-shadow: none; content: ""; }
+.hero-symbol.danger::before { transform: translate(-50%,-50%) rotate(45deg); }
+.hero-symbol.danger::after { transform: translate(-50%,-50%) rotate(-45deg); }
 .hero-copy { position: relative; z-index: 1; min-width: 0; }
 .kicker { margin: 0; color: currentColor; font-size: 9px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
 .hero-copy h1 { color: #f3f6fb; }
@@ -207,7 +209,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 .setup-check strong { overflow: hidden; color: #aab6c8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .setup-check small { overflow: hidden; margin-top: 2px; color: var(--faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .setup-check.complete > span { border-color: rgba(67,213,154,.45); background: var(--green-soft); color: transparent; }
-.setup-check.complete > span::after { width: 8px; height: 4px; border-bottom: 1.5px solid var(--green); border-left: 1.5px solid var(--green); content: ""; transform: rotate(-45deg) translate(1px,-1px); }
+.setup-check.complete > span::after { width: 8px; height: 4px; border-bottom: 1.5px solid var(--green); border-left: 1.5px solid var(--green); content: ""; transform: rotate(-45deg); }
 .setup-check.complete strong { color: #d5e4df; }
 .setup-check.complete small { color: #78ad9b; }
 .setup-check.current { background: rgba(103,220,237,.035); }

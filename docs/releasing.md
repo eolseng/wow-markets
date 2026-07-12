@@ -92,6 +92,14 @@ gh api repos/eolseng/wow-markets/releases/tags/companion-v<version> \
   --jq '{draft, prerelease, immutable, tag_name, html_url}'
 ```
 
+Use the tag-aware `gh release edit companion-v<version> --draft=false`
+command exactly. A draft may appear under the requested tag in `gh release
+list` while its raw Releases API record still uses an internal `untagged-*`
+placeholder. Never publish a draft by PATCHing its release ID: that can lock an
+immutable release to the placeholder tag and break every signed appcast URL.
+After publication, confirm the intended tag exists on the protected source
+commit and the release URL, `tag_name`, and appcast URLs all use that tag.
+
 The published release must report `immutable: true`. Never edit a signed
 appcast or replace an immutable asset.
 

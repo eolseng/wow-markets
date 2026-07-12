@@ -93,9 +93,14 @@ platform behavior that still requires a disposable macOS/Windows login test.
    and enclosure versions, attestations, Apple stapling, and Gatekeeper have
    been independently verified. Expect exactly the macOS and Windows appcasts
    for the selected channel, never both stable and beta feeds in one release.
-5. Publish the audited draft before promoting its exact immutable version with
-   `COMPANION_BETA_VERSION` or `COMPANION_STABLE_VERSION` in the private
-   service deployment. Never edit a signed feed or immutable asset.
+5. Publish the audited draft with the tag-aware
+   `gh release edit companion-v<version> --draft=false` command before
+   promoting its exact immutable version. Never publish by PATCHing a raw draft
+   release ID: GitHub may still store an internal `untagged-*` placeholder even
+   when CLI listings show the requested tag. Verify the intended remote tag,
+   release `tag_name`, immutable state, and appcast URLs before setting
+   `COMPANION_BETA_VERSION` or `COMPANION_STABLE_VERSION` in the private service.
+   Never edit a signed feed or immutable asset.
 6. Smoke-test startup discovery, Home/tray notice, native installation,
    relaunch, preserved token/archive/upload state, and background behavior on
    both supported operating systems.

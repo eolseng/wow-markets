@@ -11,7 +11,7 @@
   "info": {
     "companyName": "WoW Markets",
     "productName": "WoW Markets Companion",
-    "productVersion": "1.0.0-rc.11",
+    "productVersion": "1.0.0-rc.12",
     "copyright": "Copyright 2026 WoW Markets",
     "comments": "Desktop companion that uploads WoW Markets addon captures to the WoW Markets API."
   }

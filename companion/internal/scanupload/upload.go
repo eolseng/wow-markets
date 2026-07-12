@@ -196,6 +196,29 @@ func (agent *Agent) Records() ([]Record, error) {
 	return recordsFromState(currentState), nil
 }
 
+// NextDueAt reports when upload processing next has useful work. A zero time
+// means the durable queue contains no pending or retryable uploads.
+func (agent *Agent) NextDueAt() (time.Time, error) {
+	currentState, err := agent.loadState()
+	if err != nil {
+		return time.Time{}, err
+	}
+	var next time.Time
+	for _, record := range currentState.Uploads {
+		if record.Status == StatusPending || record.Status == StatusUploading {
+			return agent.now().UTC(), nil
+		}
+		if record.Status != StatusFailed || !record.Retryable {
+			continue
+		}
+		candidate, err := time.Parse(time.RFC3339, record.NextAttemptAt)
+		if err == nil && (next.IsZero() || candidate.Before(next)) {
+			next = candidate
+		}
+	}
+	return next, nil
+}
+
 func (agent *Agent) Queue(records []scanarchive.Record) ([]QueueResult, error) {
 	currentState, err := agent.loadState()
 	if err != nil {

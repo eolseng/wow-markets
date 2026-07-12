@@ -545,6 +545,43 @@ func TestResetFailedAuthorizationRequeuesRejectedUpload(t *testing.T) {
 	}
 }
 
+func TestNextDueAtSkipsCompletedQueueAndSchedulesRetry(t *testing.T) {
+	agent, _ := newTestAgent(t, "http://127.0.0.1", "seed")
+	agent.now = func() time.Time { return time.Date(2026, 7, 12, 12, 0, 0, 0, time.UTC) }
+	retryAt := agent.now().Add(10 * time.Minute)
+	current := state{Version: stateVersion, Uploads: map[string]Record{
+		"uploaded": {Status: StatusUploaded},
+		"failed": {
+			Status:        StatusFailed,
+			Retryable:     true,
+			NextAttemptAt: retryAt.Format(time.RFC3339),
+		},
+	}}
+	if err := writeState(agent.dataDir, current); err != nil {
+		t.Fatal(err)
+	}
+
+	next, err := agent.NextDueAt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !next.Equal(retryAt) {
+		t.Fatalf("NextDueAt() = %s, want %s", next, retryAt)
+	}
+
+	current.Uploads["failed"] = Record{Status: StatusFailed, Retryable: false}
+	if err := writeState(agent.dataDir, current); err != nil {
+		t.Fatal(err)
+	}
+	next, err = agent.NextDueAt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !next.IsZero() {
+		t.Fatalf("completed queue NextDueAt() = %s, want zero", next)
+	}
+}
+
 func TestResetFailedAuthorizationLeavesOtherFailuresUntouched(t *testing.T) {
 	dataDir := t.TempDir()
 	err := writeState(dataDir, state{

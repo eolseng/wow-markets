@@ -75,17 +75,17 @@ func Run(ctx context.Context, config Config, emit func(Event)) error {
 	}
 
 	var lastSignature fileSignature
-	processArchive := func(force bool) error {
+	processArchive := func(force bool) (bool, error) {
 		signature, err := statSignature(config.FilePath)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if !force && signature == lastSignature {
-			return nil
+			return false, nil
 		}
 		results, err := processor.ProcessFile(config.FilePath, config.VariableName)
 		if err != nil {
-			return err
+			return false, err
 		}
 		lastSignature = signature
 
@@ -103,7 +103,7 @@ func Run(ctx context.Context, config Config, emit func(Event)) error {
 		if force {
 			records, err = processor.Records()
 			if err != nil {
-				return err
+				return false, err
 			}
 			for _, record := range records {
 				recordsByChecksum[record.Checksum] = record
@@ -111,27 +111,29 @@ func Run(ctx context.Context, config Config, emit func(Event)) error {
 		}
 		queued, err := uploader.Queue(records)
 		if err != nil {
-			return err
+			return false, err
 		}
+		hasNewUploads := false
 		for _, result := range queued {
 			if result.Queued {
+				hasNewUploads = true
 				event := archiveEvent("queue", recordsByChecksum[result.Checksum])
 				event.Message = "Queued scan for upload"
 				event.Status = scanupload.StatusPending
 				emit(event)
 			}
 		}
-		return nil
+		return hasNewUploads, nil
 	}
 
-	processUploads := func(ctx context.Context) error {
+	processUploads := func(ctx context.Context) (time.Time, error) {
 		results, err := uploader.ProcessDueWithProgress(ctx, func(record scanupload.Record) {
 			event := uploadEvent("uploading", record)
 			event.Message = "Uploading scan"
 			emit(event)
 		})
 		if err != nil {
-			return err
+			return time.Time{}, err
 		}
 		for _, result := range results {
 			record := result.Record
@@ -146,21 +148,29 @@ func Run(ctx context.Context, config Config, emit func(Event)) error {
 			event.Error = record.LastError
 			emit(event)
 		}
-		return nil
+		return uploader.NextDueAt()
 	}
 
 	unhealthy := false
+	var nextUploadAt time.Time
+	uploadScheduleKnown := false
 	runCycle := func(force bool) {
 		cycleFailed := false
-		if err := processArchive(force); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				emitError(emit, "archive_error", err)
+		queued, archiveErr := processArchive(force)
+		if archiveErr != nil {
+			if !errors.Is(archiveErr, context.Canceled) {
+				emitError(emit, "archive_error", archiveErr)
 				cycleFailed = true
 			}
 		}
-		if err := processUploads(ctx); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				emitError(emit, "upload_error", err)
+		var uploadErr error
+		if !uploadScheduleKnown || queued || (!nextUploadAt.IsZero() && !nextUploadAt.After(time.Now().UTC())) {
+			nextUploadAt, uploadErr = processUploads(ctx)
+			uploadScheduleKnown = uploadErr == nil
+		}
+		if uploadErr != nil {
+			if !errors.Is(uploadErr, context.Canceled) {
+				emitError(emit, "upload_error", uploadErr)
 				cycleFailed = true
 			}
 		}

@@ -16,6 +16,9 @@ const state = {
   snapshot: null,
 }
 
+const recoveryPollInterval = 30000
+let recoveryPoll = null
+
 const $ = (selector) => document.querySelector(selector)
 const $$ = (selector) => [...document.querySelectorAll(selector)]
 
@@ -575,5 +578,19 @@ window.addEventListener("DOMContentLoaded", () => {
     window.runtime.EventsOn("companion:snapshot", (snapshot) => render(snapshot))
   }
   void refresh()
-  window.setInterval(refresh, 2500)
+
+  const updateRecoveryPoll = () => {
+    if (recoveryPoll !== null) {
+      window.clearInterval(recoveryPoll)
+      recoveryPoll = null
+    }
+    if (!document.hidden) {
+      recoveryPoll = window.setInterval(refresh, recoveryPollInterval)
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    updateRecoveryPoll()
+    if (!document.hidden) void refresh()
+  })
+  updateRecoveryPoll()
 })
